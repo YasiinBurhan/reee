@@ -59,16 +59,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.equinox.virtual.model.VirtualAppInfo
 
-private val REGISTERED_PACKAGES = setOf(
-    "com.mobile.legends"
-)
-
 @Composable
 fun VirtualSpaceTabScreen(
     userList: List<Int>,
     currentUserId: Int,
     virtualApps: List<VirtualAppInfo>,
     hostApps: List<VirtualAppInfo>,
+    allowedPackages: Set<String> = emptySet(),
     selectedTab: Int,
     onSelectTab: (Int) -> Unit,
     onSelectUser: (Int) -> Unit,
@@ -106,6 +103,7 @@ fun VirtualSpaceTabScreen(
                 } else {
                     VirtualAppsGrid(
                         apps = virtualApps,
+                        allowedPackages = allowedPackages,
                         onLaunch = onLaunchVirtualApp,
                         onClearData = onClearVirtualAppData,
                         onUninstall = onUninstallVirtualApp
@@ -115,6 +113,7 @@ fun VirtualSpaceTabScreen(
             1 -> {
                 HostAppsList(
                     hostApps = hostApps,
+                    allowedPackages = allowedPackages,
                     onCloneApp = onCloneHostApp
                 )
             }
@@ -181,6 +180,7 @@ fun EmptyVirtualAppsView(onSelectHostAppsTab: () -> Unit) {
 @Composable
 fun VirtualAppsGrid(
     apps: List<VirtualAppInfo>,
+    allowedPackages: Set<String> = emptySet(),
     onLaunch: (VirtualAppInfo) -> Unit,
     onClearData: (String) -> Unit,
     onUninstall: (String) -> Unit
@@ -218,6 +218,7 @@ fun VirtualAppsGrid(
             items(filteredApps, key = { it.packageName }) { app ->
                 VirtualAppCard(
                     app = app,
+                    allowedPackages = allowedPackages,
                     onLaunch = { onLaunch(app) },
                     onClearData = { onClearData(app.packageName) },
                     onUninstall = { onUninstall(app.packageName) }
@@ -230,6 +231,7 @@ fun VirtualAppsGrid(
 @Composable
 fun VirtualAppCard(
     app: VirtualAppInfo,
+    allowedPackages: Set<String> = emptySet(),
     onLaunch: () -> Unit,
     onClearData: () -> Unit,
     onUninstall: () -> Unit
@@ -333,12 +335,13 @@ fun VirtualAppCard(
                 fontSize = 10.sp
             )
 
-            val profileLabel = when (app.packageName) {
-                "com.dts.freefireth" -> "FF Profile"
-                "com.mobile.legends" -> "MLBB Profile"
-                "com.tencent.ig" -> "PUBG Profile"
-                "com.kiloo.subwaysurf" -> "Subway Profile"
-                else -> null
+            val isWhitelisted = allowedPackages.contains(app.packageName)
+            val profileLabel = if (isWhitelisted) {
+                val shortName = app.name.split(" ").firstOrNull() ?: "App"
+                val cleanedName = if (shortName.length > 8) shortName.take(6) + ".." else shortName
+                "$cleanedName Profile"
+            } else {
+                null
             }
             if (profileLabel != null) {
                 Spacer(modifier = Modifier.height(4.dp))
@@ -377,6 +380,7 @@ fun VirtualAppCard(
 @Composable
 fun HostAppsList(
     hostApps: List<VirtualAppInfo>,
+    allowedPackages: Set<String> = emptySet(),
     onCloneApp: (String) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
@@ -408,7 +412,7 @@ fun HostAppsList(
             modifier = Modifier.fillMaxSize()
         ) {
             items(filteredApps, key = { it.packageName }) { app ->
-                val isRegistered = REGISTERED_PACKAGES.contains(app.packageName)
+                val isRegistered = allowedPackages.contains(app.packageName)
                 Card(
                     colors = CardDefaults.cardColors(
                         containerColor = if (isRegistered) {

@@ -17,26 +17,79 @@ class BlackBoxApp : Application() {
         fun getContext(): Context = instance.applicationContext
 
         fun initFirebase(context: Context): FirebaseApp? {
-            if (FirebaseApp.getApps(context).isNotEmpty()) {
-                return FirebaseApp.getInstance()
-            }
-            return try {
-                FirebaseApp.initializeApp(context)
-            } catch (e: Exception) {
-                Log.w(TAG, "FirebaseApp auto initialize failed (${e.message}), attempting manual fallback...")
-                try {
-                    val options = com.google.firebase.FirebaseOptions.Builder()
-                        .setApplicationId("1:16158272696:android:96098a8fe11315125a984d")
-                        .setApiKey("AIzaSyDm1ReFVcxRn_vU3NPt1_GLtJZ4kP1v7AE")
-                        .setProjectId("equinox-28026")
-                        .setStorageBucket("equinox-28026.firebasestorage.app")
-                        .setGcmSenderId("16158272696")
-                        .build()
-                    FirebaseApp.initializeApp(context, options)
-                } catch (e2: Exception) {
-                    Log.e(TAG, "FirebaseApp manual initialize error: ${e2.message}")
-                    null
+            val appContext = context.applicationContext ?: context
+            try {
+                if (FirebaseApp.getApps(appContext).isNotEmpty()) {
+                    return FirebaseApp.getInstance()
                 }
+            } catch (e: Throwable) {
+                Log.w(TAG, "getApps check warning: ${e.message}")
+            }
+
+            try {
+                return FirebaseApp.getInstance()
+            } catch (e: Throwable) {
+                // Not initialized yet
+            }
+
+            try {
+                return FirebaseApp.initializeApp(appContext)
+            } catch (e: Throwable) {
+                Log.w(TAG, "FirebaseApp auto initialize (appContext) failed (${e.message}), trying direct context...")
+            }
+
+            try {
+                return FirebaseApp.initializeApp(context)
+            } catch (e: Throwable) {
+                Log.w(TAG, "FirebaseApp auto initialize (context) failed (${e.message}), attempting manual fallback...")
+            }
+
+            val options = try {
+                com.google.firebase.FirebaseOptions.Builder()
+                    .setApplicationId("1:16158272696:android:96098a8fe11315125a984d")
+                    .setApiKey("AIzaSyDm1ReFVcxRn_vU3NPt1_GLtJZ4kP1v7AE")
+                    .setProjectId("equinox-28026")
+                    .setStorageBucket("equinox-28026.firebasestorage.app")
+                    .setGcmSenderId("16158272696")
+                    .build()
+            } catch (e: Throwable) {
+                Log.e(TAG, "Failed to build FirebaseOptions: ${e.message}")
+                null
+            }
+
+            if (options != null) {
+                try {
+                    return FirebaseApp.initializeApp(appContext, options)
+                } catch (e: Throwable) {
+                    if (e.message?.contains("already exists", ignoreCase = true) == true) {
+                        try {
+                            return FirebaseApp.getInstance()
+                        } catch (ex: Throwable) {
+                            // ignore
+                        }
+                    }
+                    Log.w(TAG, "FirebaseApp manual initialize (appContext) error: ${e.message}")
+                }
+
+                try {
+                    return FirebaseApp.initializeApp(context, options)
+                } catch (e: Throwable) {
+                    if (e.message?.contains("already exists", ignoreCase = true) == true) {
+                        try {
+                            return FirebaseApp.getInstance()
+                        } catch (ex: Throwable) {
+                            // ignore
+                        }
+                    }
+                    Log.e(TAG, "FirebaseApp manual initialize (context) error: ${e.message}")
+                }
+            }
+
+            return try {
+                FirebaseApp.getInstance()
+            } catch (e: Throwable) {
+                Log.e(TAG, "FirebaseApp final fallback getInstance failed: ${e.message}")
+                null
             }
         }
 

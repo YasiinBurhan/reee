@@ -91,6 +91,7 @@ fun BlackBoxMainScreen(
     val expiryTime by viewModel.expiryTime.collectAsState()
     val isDarkThemePref by viewModel.isDarkTheme.collectAsState()
     val userRole by viewModel.userRole.collectAsState()
+    val allowedPackages by viewModel.allowedPackages.collectAsState()
     val isDarkTheme = isDarkThemePref ?: androidx.compose.foundation.isSystemInDarkTheme()
 
     val context = LocalContext.current
@@ -348,6 +349,7 @@ fun BlackBoxMainScreen(
                         currentUserId = currentUserId,
                         virtualApps = virtualApps,
                         hostApps = hostApps,
+                        allowedPackages = allowedPackages,
                         selectedTab = selectedTab,
                         onSelectTab = { selectedTab = it },
                         onSelectUser = { viewModel.selectUser(it) },

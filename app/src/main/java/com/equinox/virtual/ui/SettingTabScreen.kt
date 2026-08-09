@@ -18,6 +18,21 @@ fun SettingTabScreen(
     var showUserManagement by remember { mutableStateOf(false) }
     var showLicenseManagement by remember { mutableStateOf(false) }
     var showSystemStats by remember { mutableStateOf(false) }
+    var showAllowedPackages by remember { mutableStateOf(false) }
+
+    if (showAllowedPackages) {
+        val packages by viewModel.allowedPackageList.collectAsState()
+        val isLoading by viewModel.isLoading.collectAsState()
+
+        AllowedPackagesManagementScreen(
+            packages = packages,
+            isLoading = isLoading,
+            onBack = { showAllowedPackages = false },
+            onAddPackage = { pkg, name -> viewModel.addAllowedPackage(pkg, name) },
+            onDeletePackage = { pkg -> viewModel.deleteAllowedPackage(pkg) }
+        )
+        return
+    }
 
     if (showUserManagement) {
         val users by viewModel.firestoreUsers.collectAsState()
@@ -117,6 +132,14 @@ fun SettingTabScreen(
                     title = "Kelola & Generate Lisensi",
                     subtitle = "Buat dan atur kode aktivasi lisensi",
                     onClick = { showLicenseManagement = true }
+                )
+            }
+            item {
+                ProfileMenuItem(
+                    icon = Icons.Default.Apps,
+                    title = "APK Bisa Dikloning (Whitelist)",
+                    subtitle = "Kelola daftar package APK yang diizinkan untuk dikloning",
+                    onClick = { showAllowedPackages = true }
                 )
             }
             item {
