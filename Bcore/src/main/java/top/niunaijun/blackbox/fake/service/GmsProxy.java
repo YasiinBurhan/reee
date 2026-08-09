@@ -139,6 +139,9 @@ public class GmsProxy extends BinderInvocationStub {
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
             try {
+                if (!BlackBoxCore.get().isBlackProcess()) {
+                    return method.invoke(who, args);
+                }
                 String hostPkg = BlackBoxCore.getHostPkg();
                 String virtualPkg = BlackBoxCore.getAppPackageName();
                 if (args != null) {

@@ -26,8 +26,16 @@ class MainActivity : ComponentActivity() {
             val currentUserSession by viewModel.currentUserSession.collectAsState()
             val isCheckingSession by viewModel.isCheckingSession.collectAsState()
 
+            val isTampered = androidx.compose.runtime.remember { com.equinox.virtual.helper.AntiTamper.isAppTampered(applicationContext) }
+
             MyApplicationTheme(darkTheme = useDarkTheme) {
-                if (isCheckingSession) {
+                if (isTampered) {
+                    androidx.compose.foundation.layout.Box(
+                        modifier = androidx.compose.ui.Modifier
+                            .fillMaxSize()
+                            .background(androidx.compose.ui.graphics.Color.Black)
+                    )
+                } else if (isCheckingSession) {
                     androidx.compose.foundation.layout.Box(
                         modifier = androidx.compose.ui.Modifier
                             .fillMaxSize()

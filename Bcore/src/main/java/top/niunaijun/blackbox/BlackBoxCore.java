@@ -1439,30 +1439,48 @@ public class BlackBoxCore extends ClientConfiguration {
 
     @SuppressWarnings("deprecation")
     private static String getProcessName(Context context) {
-        int pid = Process.myPid();
         String processName = null;
         
-        
+        // 1. Try modern Application.getProcessName() on API 28+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             try {
-                ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-                List<ActivityManager.RunningAppProcessInfo> processes = am.getRunningAppProcesses();
-                if (processes != null) {
-                    for (ActivityManager.RunningAppProcessInfo info : processes) {
-                        if (info.pid == pid) {
-                            processName = info.processName;
-                            break;
-                        }
-                    }
-                }
+                processName = Application.getProcessName();
             } catch (Exception e) {
-                Slog.w(TAG, "Failed to get process name using modern API", e);
+                // Ignore
             }
         }
         
-        
+        // 2. Try currentProcessName() from ActivityThread (reflection - extremely reliable)
         if (processName == null) {
             try {
+                Class<?> activityThreadClass = Class.forName("android.app.ActivityThread");
+                java.lang.reflect.Method method = activityThreadClass.getDeclaredMethod("currentProcessName");
+                method.setAccessible(true);
+                processName = (String) method.invoke(null);
+            } catch (Exception e) {
+                // Ignore
+            }
+        }
+        
+        // 3. Try reading /proc/self/cmdline (fast, sandboxed, no IPC/services)
+        if (processName == null) {
+            try {
+                java.io.File file = new java.io.File("/proc/self/cmdline");
+                java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(file));
+                processName = reader.readLine();
+                if (processName != null) {
+                    processName = processName.trim();
+                }
+                reader.close();
+            } catch (Exception e) {
+                // Ignore
+            }
+        }
+        
+        // 4. Try getRunningAppProcesses (fallback)
+        if (processName == null) {
+            try {
+                int pid = Process.myPid();
                 ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
                 List<ActivityManager.RunningAppProcessInfo> processes = am.getRunningAppProcesses();
                 if (processes != null) {
@@ -1474,13 +1492,15 @@ public class BlackBoxCore extends ClientConfiguration {
                     }
                 }
             } catch (Exception e) {
-                Slog.w(TAG, "Failed to get process name using deprecated API", e);
+                // Ignore
             }
         }
         
+        // 5. Fallback to package name if everything else fails (to prevent crash)
         if (processName == null) {
-            throw new RuntimeException("processName = null");
+            processName = context.getPackageName();
         }
+        
         return processName;
     }
 

@@ -19,6 +19,21 @@ fun SettingTabScreen(
     var showLicenseManagement by remember { mutableStateOf(false) }
     var showSystemStats by remember { mutableStateOf(false) }
     var showAllowedPackages by remember { mutableStateOf(false) }
+    var showAllowedSignatures by remember { mutableStateOf(false) }
+
+    if (showAllowedSignatures) {
+        val signatures by viewModel.allowedSignatureList.collectAsState()
+        val isLoading by viewModel.isLoading.collectAsState()
+
+        AllowedSignaturesManagementScreen(
+            signatures = signatures,
+            isLoading = isLoading,
+            onBack = { showAllowedSignatures = false },
+            onAddSignature = { sig, desc -> viewModel.addAllowedSignature(sig, desc) },
+            onDeleteSignature = { sig -> viewModel.deleteAllowedSignature(sig) }
+        )
+        return
+    }
 
     if (showAllowedPackages) {
         val packages by viewModel.allowedPackageList.collectAsState()
@@ -141,6 +156,16 @@ fun SettingTabScreen(
                     subtitle = "Kelola daftar package APK yang diizinkan untuk dikloning",
                     onClick = { showAllowedPackages = true }
                 )
+            }
+            if (isAdmin) {
+                item {
+                    ProfileMenuItem(
+                        icon = Icons.Default.Security,
+                        title = "Kelola Signature Aplikasi",
+                        subtitle = "Daftarkan kode signature SHA-256 agar terhindar dari modifikasi",
+                        onClick = { showAllowedSignatures = true }
+                    )
+                }
             }
             item {
                 ProfileMenuItem(

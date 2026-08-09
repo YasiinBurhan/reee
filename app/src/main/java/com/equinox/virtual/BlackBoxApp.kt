@@ -162,15 +162,42 @@ class BlackBoxApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        try {
-            initFirebase(this)
+        val isMain = try {
+            val currentProcess = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                android.app.Application.getProcessName()
+            } else {
+                try {
+                    val activityThreadClass = Class.forName("android.app.ActivityThread")
+                    val method = activityThreadClass.getDeclaredMethod("currentProcessName")
+                    method.isAccessible = true
+                    method.invoke(null) as? String
+                } catch (e: Exception) {
+                    null
+                } ?: try {
+                    val file = java.io.File("/proc/self/cmdline")
+                    val reader = java.io.BufferedReader(java.io.FileReader(file))
+                    val name = reader.readLine()?.trim()
+                    reader.close()
+                    name
+                } catch (e: Exception) {
+                    null
+                } ?: packageName
+            }
+            currentProcess == packageName
         } catch (e: Exception) {
-            Log.e(TAG, "FirebaseApp initialize error: ${e.message}")
+            true
         }
-        try {
-            com.equinox.virtual.core.VirtualSpoof.initSpoof()
-        } catch (e: Throwable) {
-            Log.w(TAG, "VirtualSpoof initSpoof warning: ${e.message}")
+        if (isMain) {
+            try {
+                initFirebase(this)
+            } catch (e: Exception) {
+                Log.e(TAG, "FirebaseApp initialize error: ${e.message}")
+            }
+            try {
+                com.equinox.virtual.core.VirtualSpoof.initSpoof()
+            } catch (e: Throwable) {
+                Log.w(TAG, "VirtualSpoof initSpoof warning: ${e.message}")
+            }
         }
         try {
             BlackBoxCore.get().doCreate()
