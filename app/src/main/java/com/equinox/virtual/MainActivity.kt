@@ -36,8 +36,9 @@ class MainActivity : ComponentActivity() {
                     ) {
                         androidx.compose.material3.CircularProgressIndicator()
                     }
+                } else if (currentUserSession == null) {
+                    com.equinox.virtual.ui.AuthScreen(viewModel = viewModel)
                 } else {
-                    // Always show MainScreen, ignoring session
                     BlackBoxMainScreen(viewModel = viewModel)
                 }
             }

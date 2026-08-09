@@ -162,15 +162,15 @@ fun BlackBoxMainScreen(
             ) {
                 Surface(
                     shape = RoundedCornerShape(32.dp),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
-                    shadowElevation = 12.dp,
-                    tonalElevation = 12.dp,
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                    shadowElevation = 8.dp,
+                    tonalElevation = 0.dp,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     NavigationBar(
                         containerColor = Color.Transparent,
                         tonalElevation = 0.dp,
-                        modifier = Modifier.height(72.dp)
+                        modifier = Modifier.height(80.dp)
                     ) {
                         val navItems = listOf(
                             Triple(0, Icons.Default.Home, "Beranda"),

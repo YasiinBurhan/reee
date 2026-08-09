@@ -137,11 +137,18 @@ class BlackBoxViewModel(application: Application) : AndroidViewModel(application
     fun refreshAll() {
         viewModelScope.launch(Dispatchers.IO) {
             _isLoading.value = true
+            _snackbarMessage.emit("Sandbox sedang dimuat ulang...")
+            
+            // Re-check engine
+            virtualSpaceManager.checkEngineStatus()
+            
             val pkgs = allowedPackages.value
             val pkgList = allowedPackageList.value
             virtualSpaceManager.loadVirtualApps(virtualSpaceManager.currentUserId.value, pkgs)
             virtualSpaceManager.loadHostApps(pkgs, pkgList)
             virtualSpaceManager.loadUserList()
+            
+            _snackbarMessage.emit("Sandbox berhasil dimuat ulang!")
             _isLoading.value = false
         }
     }
@@ -381,8 +388,14 @@ class BlackBoxViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun logout() {
-        authUserManager.logout()
-        licenseStatsManager.clearListeners()
+        viewModelScope.launch {
+            _isLoading.value = true
+            _snackbarMessage.emit("Sedang keluar...")
+            authUserManager.logout()
+            licenseStatsManager.clearListeners()
+            _isLoading.value = false
+            _snackbarMessage.emit("Berhasil keluar")
+        }
     }
 
     fun fetchLicenseKeys() {

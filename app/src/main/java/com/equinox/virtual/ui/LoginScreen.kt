@@ -162,9 +162,15 @@ fun LoginScreen(
                     )
 
                     Text(
-                        text = if (isRegisteredDevice)
-                            "Masa aktif perangkat Anda telah terverifikasi. Silakan masuk ke ruang virtual Anda."
-                        else
+                        text = if (isRegisteredDevice) {
+                            val expiryTime by viewModel.expiryTime.collectAsState()
+                            if (expiryTime != null && expiryTime!! > 0) {
+                                val sdf = java.text.SimpleDateFormat("dd MMM yyyy, HH:mm", java.util.Locale.getDefault())
+                                "Masa aktif perangkat Anda berlaku hingga: ${sdf.format(java.util.Date(expiryTime!!))}"
+                            } else {
+                                "Masa aktif perangkat Anda telah terverifikasi. Silakan masuk."
+                            }
+                        } else
                             "Klik tombol di bawah untuk mendaftarkan perangkat HWID Anda dan memperoleh akses instan.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,

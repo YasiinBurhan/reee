@@ -98,7 +98,7 @@ fun DashboardTabScreen(
                             Spacer(modifier = Modifier.width(16.dp))
                             Column {
                                 Text(
-                                    text = "EQuinox Sandbox",
+                                    text = "EQuinox Virtual",
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = Color.White

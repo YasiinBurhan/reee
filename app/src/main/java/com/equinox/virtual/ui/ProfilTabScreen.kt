@@ -81,7 +81,7 @@ fun ProfilTabScreen(
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = currentUserSession ?: "PENGELOLA VIRTUAL",
+                            text = currentUserSession ?: com.equinox.virtual.EQuinoxApp.getDeviceHwid(),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.ExtraBold
                         )

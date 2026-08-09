@@ -183,7 +183,7 @@ fun EmptyVirtualAppsView(onSelectHostAppsTab: () -> Unit) {
         Text(
             text = "Belum ada aplikasi yang dikloning ke dalam sandbox ini.",
             style = MaterialTheme.typography.bodyLarge,
-            color = iOSSystemGray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
 
@@ -293,7 +293,7 @@ fun VirtualAppCard(
                         onClick = { menuExpanded = true },
                         modifier = Modifier.size(24.dp)
                     ) {
-                        Icon(Icons.Default.MoreVert, contentDescription = null, tint = iOSSystemGray, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.MoreVert, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
                     }
 
                     DropdownMenu(
@@ -341,7 +341,7 @@ fun VirtualAppCard(
             Text(
                 text = app.packageName,
                 style = MaterialTheme.typography.labelSmall,
-                color = iOSSystemGray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -382,12 +382,12 @@ fun HostAppsList(
             value = searchQuery,
             onValueChange = { searchQuery = it },
             placeholder = { Text("Cari aplikasi di perangkat...") },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = iOSSystemGray) },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
             shape = RoundedCornerShape(16.dp),
             colors = TextFieldDefaults.colors(
-                focusedContainerColor = iOSSystemGray6,
-                unfocusedContainerColor = iOSSystemGray6,
-                disabledContainerColor = iOSSystemGray6,
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
             ),
@@ -438,7 +438,7 @@ fun HostAppsList(
                                 Text(
                                     text = if (isWhitelisted) app.packageName else "BELUM TERDAFTAR",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = if (isWhitelisted) iOSSystemGray else iOSRed,
+                                    color = if (isWhitelisted) MaterialTheme.colorScheme.onSurfaceVariant else iOSRed,
                                     fontWeight = if (isWhitelisted) FontWeight.Normal else FontWeight.Bold,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
@@ -450,9 +450,9 @@ fun HostAppsList(
                             onClick = { onCloneApp(app.packageName) },
                             enabled = isWhitelisted,
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = iOSSystemGray6,
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
                                 contentColor = iOSBlue,
-                                disabledContainerColor = iOSSystemGray6.copy(alpha = 0.5f)
+                                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                             ),
                             shape = RoundedCornerShape(16.dp),
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
