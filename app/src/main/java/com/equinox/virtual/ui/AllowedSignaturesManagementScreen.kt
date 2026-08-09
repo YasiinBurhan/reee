@@ -119,7 +119,7 @@ fun AllowedSignaturesManagementScreen(
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                         Text(
-                            text = "Aplikasi akan mendeteksi jika didekompilasi, dimodifikasi dex/lib, atau di-resign. Jika signature tidak cocok dengan daftar di bawah, aplikasi akan otomatis memicu layar hitam.",
+                            text = "Aplikasi akan mendeteksi jika didekompilasi, dimodifikasi dex/lib, atau di-resign. Jika signature tidak cocok dengan daftar di bawah, aplikasi akan otomatis crash / keluar.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                         )
@@ -339,7 +339,7 @@ fun AllowedSignaturesManagementScreen(
             onDismissRequest = { signatureToDelete = null },
             title = { Text("Hapus Signature?") },
             text = {
-                Text("Apakah Anda yakin ingin menghapus signature ini? Jika dihapus dan signature aktif aplikasi Anda tidak terdaftar lagi, aplikasi akan terkunci (layar hitam).")
+                Text("Apakah Anda yakin ingin menghapus signature ini? Jika dihapus dan signature aktif aplikasi Anda tidak terdaftar lagi, aplikasi akan otomatis crash saat dibuka.")
             },
             confirmButton = {
                 Button(

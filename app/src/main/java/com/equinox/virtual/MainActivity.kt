@@ -27,15 +27,12 @@ class MainActivity : ComponentActivity() {
             val isCheckingSession by viewModel.isCheckingSession.collectAsState()
 
             val isTampered = androidx.compose.runtime.remember { com.equinox.virtual.helper.AntiTamper.isAppTampered(applicationContext) }
+            if (isTampered) {
+                throw SecurityException("App integrity check failed!")
+            }
 
             MyApplicationTheme(darkTheme = useDarkTheme) {
-                if (isTampered) {
-                    androidx.compose.foundation.layout.Box(
-                        modifier = androidx.compose.ui.Modifier
-                            .fillMaxSize()
-                            .background(androidx.compose.ui.graphics.Color.Black)
-                    )
-                } else if (isCheckingSession) {
+                if (isCheckingSession) {
                     androidx.compose.foundation.layout.Box(
                         modifier = androidx.compose.ui.Modifier
                             .fillMaxSize()
