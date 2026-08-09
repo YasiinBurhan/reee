@@ -55,11 +55,11 @@ object AntiTamper {
             return true
         }
 
-        // 3. Signature Verification
-        if (!verifyAppSignature(context)) {
-            Log.e(TAG, "Signature mismatch detected! The app signature has been modified.")
-            return true
-        }
+        // 3. Signature Verification - Disabled per user request
+        // if (!verifyAppSignature(context)) {
+        //     Log.e(TAG, "Signature mismatch detected! The app signature has been modified.")
+        //     return true
+        // }
 
         // 4. Dex / File Integrity Check
         if (isDexTampered(context)) {
