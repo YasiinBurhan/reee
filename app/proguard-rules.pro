@@ -29,3 +29,5 @@
 
 # Preserve Reflection / Serialization / Annotations
 -keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod,Exceptions,SourceFile,LineNumberTable
+
+-dontwarn java.lang.invoke.**

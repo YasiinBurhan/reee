@@ -5,7 +5,6 @@ import android.util.Log
 import androidx.annotation.Keep
 import dalvik.system.DexFile
 import top.niunaijun.blackbox.BlackBoxCore
-import top.niunaijun.blackbox.core.DrawingCallback
 import top.niunaijun.blackbox.core.IOCore
 import top.niunaijun.blackbox.core.system.JarManager
 import top.niunaijun.blackbox.utils.Slog
@@ -45,44 +44,6 @@ object NativeCore {
 
     @JvmStatic
     external fun disableResourceLoading(): Boolean
-
-    private var sCallback: DrawingCallback? = null
-
-    @Keep
-    @JvmStatic
-    fun setDrawingCallback(callback: DrawingCallback?) {
-        sCallback = callback
-    }
-
-    @Keep
-    @JvmStatic
-    fun drawLine(x1: Float, y1: Float, x2: Float, y2: Float, color: Int, thickness: Float) {
-        sCallback?.drawLine(x1, y1, x2, y2, color, thickness)
-    }
-
-    @Keep
-    @JvmStatic
-    fun drawBox(x: Float, y: Float, w: Float, h: Float, color: Int, thickness: Float, isFilled: Boolean) {
-        sCallback?.drawBox(x, y, w, h, color, thickness, isFilled)
-    }
-
-    @Keep
-    @JvmStatic
-    fun drawText(text: String, x: Float, y: Float, color: Int, size: Float, isCentered: Boolean) {
-        sCallback?.drawText(text, x, y, color, size, isCentered)
-    }
-
-    @Keep
-    @JvmStatic
-    fun drawCircle(x: Float, y: Float, r: Float, color: Int, thickness: Float, isFilled: Boolean) {
-        sCallback?.drawCircle(x, y, r, color, thickness, isFilled)
-    }
-
-    @Keep
-    @JvmStatic
-    fun clearDrawings() {
-        sCallback?.clearDrawings()
-    }
 
     @Keep
     @JvmStatic
