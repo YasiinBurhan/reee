@@ -15,4 +15,6 @@ debug.keystore
 *.apk
 *.aab
 *.dex
+.build-outputs/
+/.build-outputs/
 

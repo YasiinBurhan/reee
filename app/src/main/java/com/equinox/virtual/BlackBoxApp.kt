@@ -16,6 +16,30 @@ class BlackBoxApp : Application() {
 
         fun getContext(): Context = instance.applicationContext
 
+        fun initFirebase(context: Context): FirebaseApp? {
+            if (FirebaseApp.getApps(context).isNotEmpty()) {
+                return FirebaseApp.getInstance()
+            }
+            return try {
+                FirebaseApp.initializeApp(context)
+            } catch (e: Exception) {
+                Log.w(TAG, "FirebaseApp auto initialize failed (${e.message}), attempting manual fallback...")
+                try {
+                    val options = com.google.firebase.FirebaseOptions.Builder()
+                        .setApplicationId("1:16158272696:android:96098a8fe11315125a984d")
+                        .setApiKey("AIzaSyDm1ReFVcxRn_vU3NPt1_GLtJZ4kP1v7AE")
+                        .setProjectId("equinox-28026")
+                        .setStorageBucket("equinox-28026.firebasestorage.app")
+                        .setGcmSenderId("16158272696")
+                        .build()
+                    FirebaseApp.initializeApp(context, options)
+                } catch (e2: Exception) {
+                    Log.e(TAG, "FirebaseApp manual initialize error: ${e2.message}")
+                    null
+                }
+            }
+        }
+
         fun getDeviceHwid(): String {
             return try {
                 val context = getContext()
@@ -86,7 +110,7 @@ class BlackBoxApp : Application() {
     override fun onCreate() {
         super.onCreate()
         try {
-            FirebaseApp.initializeApp(this)
+            initFirebase(this)
         } catch (e: Exception) {
             Log.e(TAG, "FirebaseApp initialize error: ${e.message}")
         }

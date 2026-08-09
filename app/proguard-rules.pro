@@ -30,4 +30,13 @@
 # Preserve Reflection / Serialization / Annotations
 -keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod,Exceptions,SourceFile,LineNumberTable
 
+# Firebase & Google Play Services Keep Rules
+-keep class com.google.firebase.** { *; }
+-keep class com.google.android.gms.** { *; }
+-keepclassmembers class * implements com.google.firebase.components.ComponentRegistrar {
+    public *;
+}
+-keep class com.google.firebase.provider.FirebaseInitProvider { *; }
+-dontwarn com.google.firebase.**
+
 -dontwarn java.lang.invoke.**

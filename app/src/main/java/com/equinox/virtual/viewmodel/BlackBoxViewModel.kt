@@ -501,6 +501,11 @@ class BlackBoxViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    private fun getFirestoreDb(): com.google.firebase.firestore.FirebaseFirestore {
+        com.equinox.virtual.BlackBoxApp.initFirebase(getApplication())
+        return com.google.firebase.firestore.FirebaseFirestore.getInstance()
+    }
+
     fun listenToCurrentUserSession() {
         val currentDeviceHwid = com.equinox.virtual.BlackBoxApp.getDeviceHwid()
         val savedAuth = prefs.getString("auth_uid", null)
@@ -508,7 +513,7 @@ class BlackBoxViewModel(application: Application) : AndroidViewModel(application
 
         userDocumentListenerRegistration?.remove()
         try {
-            val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+            val db = getFirestoreDb()
             userDocumentListenerRegistration = db.collection("users").document(currentDeviceHwid)
                 .addSnapshotListener { snapshot, error ->
                     if (error != null) {
@@ -580,7 +585,7 @@ class BlackBoxViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                val db = getFirestoreDb()
                 val userDocRef = db.collection("users").document(currentDeviceHwid)
 
                 userDocRef.get().addOnSuccessListener { document ->
@@ -683,7 +688,7 @@ class BlackBoxViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                val db = getFirestoreDb()
                 val currentUid = prefs.getString("auth_uid", "") ?: ""
                 val currentUserRole = _userRole.value?.lowercase()
                 
@@ -714,7 +719,7 @@ class BlackBoxViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                val db = getFirestoreDb()
                 val currentUid = prefs.getString("auth_uid", "") ?: ""
                 val currentUserRole = _userRole.value
 
@@ -784,7 +789,7 @@ class BlackBoxViewModel(application: Application) : AndroidViewModel(application
         val uid = prefs.getString("auth_uid", "") ?: ""
         if (uid.isEmpty()) return
         
-        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+        getFirestoreDb()
             .collection("users").document(uid)
             .addSnapshotListener { snapshot, _ ->
                 if (snapshot != null && snapshot.exists()) {
@@ -797,7 +802,7 @@ class BlackBoxViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                val db = getFirestoreDb()
                 db.collection("licenses").document(key).delete().addOnSuccessListener {
                     fetchLicenseKeys()
                     viewModelScope.launch { _snackbarMessage.emit("Berhasil menghapus lisensi") }
@@ -816,7 +821,7 @@ class BlackBoxViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                val db = getFirestoreDb()
                 usersCollectionListenerRegistration = db.collection("users")
                     .addSnapshotListener { result, error ->
                         _isLoading.value = false
@@ -847,7 +852,7 @@ class BlackBoxViewModel(application: Application) : AndroidViewModel(application
                     _isLoading.value = false
                     return@launch
                 }
-                val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                val db = getFirestoreDb()
                 db.collection("users").document(uid).update(filteredUpdates).addOnSuccessListener {
                     fetchFirestoreUsers()
                     viewModelScope.launch { _snackbarMessage.emit("Berhasil memperbarui pengguna") }
@@ -865,7 +870,7 @@ class BlackBoxViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                val db = getFirestoreDb()
                 db.collection("users").document(uid).delete().addOnSuccessListener {
                     fetchFirestoreUsers()
                     viewModelScope.launch { _snackbarMessage.emit("Berhasil menghapus pengguna") }
@@ -883,7 +888,7 @@ class BlackBoxViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                val db = getFirestoreDb()
                 
                 // Fetch users and licenses
                 db.collection("users").get().addOnSuccessListener { userDocs ->
