@@ -39,4 +39,15 @@
 -keep class com.google.firebase.provider.FirebaseInitProvider { *; }
 -dontwarn com.google.firebase.**
 
+# Firestore specific (gRPC, Protobuf, etc.)
+-keep class io.grpc.** { *; }
+-keep class com.google.protobuf.** { *; }
+-keep class com.google.common.base.** { *; }
+-keep class com.google.common.collect.** { *; }
+-keep class com.google.common.io.** { *; }
+-keep class com.google.common.util.concurrent.** { *; }
+-dontwarn io.grpc.**
+-dontwarn com.google.protobuf.**
+-dontwarn javax.annotation.**
+
 -dontwarn java.lang.invoke.**

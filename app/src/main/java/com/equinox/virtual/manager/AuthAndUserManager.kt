@@ -22,13 +22,13 @@ class AuthAndUserManager(
     private val _isCheckingSession = MutableStateFlow(false)
     val isCheckingSession: StateFlow<Boolean> = _isCheckingSession.asStateFlow()
 
-    private val _expiryTime = MutableStateFlow<Long?>(System.currentTimeMillis() + (365L * 24 * 60 * 60 * 1000))
+    private val _expiryTime = MutableStateFlow<Long?>(null)
     val expiryTime: StateFlow<Long?> = _expiryTime.asStateFlow()
 
-    private val _userRole = MutableStateFlow<String?>("admin")
+    private val _userRole = MutableStateFlow<String?>(null)
     val userRole: StateFlow<String?> = _userRole.asStateFlow()
 
-    private val _isRegisteredDevice = MutableStateFlow(true)
+    private val _isRegisteredDevice = MutableStateFlow(false)
     val isRegisteredDevice: StateFlow<Boolean> = _isRegisteredDevice.asStateFlow()
 
     private val _firestoreUsers = MutableStateFlow<List<FirestoreUser>>(emptyList())
@@ -176,93 +176,105 @@ class AuthAndUserManager(
         onExpired: () -> Unit,
         onResult: (Boolean, String) -> Unit
     ) {
+        Log.d("AuthAndUserManager", "authenticateDevice started")
         _isCheckingSession.value = true
         val currentDeviceHwid = EQuinoxApp.getDeviceHwid()
+        Log.d("AuthAndUserManager", "HWID: $currentDeviceHwid")
         
         try {
             val db = getFirestoreDb()
+            Log.d("AuthAndUserManager", "Firestore instance obtained")
             db.collection("users").document(currentDeviceHwid).get()
                 .addOnSuccessListener { snapshot ->
-                    if (snapshot != null && snapshot.exists()) {
-                        // User already exists, check status and expiry
-                        val expiredAt = snapshot.getLong("expiredAt") ?: 0L
-                        val role = snapshot.getString("role") ?: "member"
-                        val status = snapshot.getString("status") ?: "active"
+                    Log.d("AuthAndUserManager", "Firestore get success. Snapshot exists: ${snapshot?.exists()}")
+                    try {
+                        if (snapshot != null && snapshot.exists()) {
+                            // User already exists, check status and expiry
+                            val expiredAt = snapshot.getLong("expiredAt") ?: 0L
+                            val role = snapshot.getString("role") ?: "member"
+                            val status = snapshot.getString("status") ?: "active"
 
-                        if (status == "banned") {
-                            _isCheckingSession.value = false
-                            onResult(false, "Perangkat Anda telah diblokir!")
-                            return@addOnSuccessListener
-                        }
-
-                        if (System.currentTimeMillis() > expiredAt && role == "member") {
-                            _isCheckingSession.value = false
-                            onResult(false, "Masa aktif lisensi Anda telah berakhir!")
-                        } else {
-                            _currentUserSession.value = currentDeviceHwid
-                            _expiryTime.value = expiredAt
-                            _userRole.value = role
-                            _isRegisteredDevice.value = true
-                            
-                            prefs.edit()
-                                .putString("auth_uid", currentDeviceHwid)
-                                .putLong("auth_expiry", expiredAt)
-                                .putString("auth_role", role)
-                                .putBoolean("is_registered_device", true)
-                                .apply()
-
-                            val roleDisplay = when (role.lowercase()) {
-                                "admin" -> "Administrator"
-                                "reseller" -> "Reseller"
-                                else -> "Member"
+                            if (status == "banned") {
+                                _isCheckingSession.value = false
+                                onResult(false, "Perangkat Anda telah diblokir!")
+                                return@addOnSuccessListener
                             }
-                            onRoleChanged(roleDisplay)
-                            _isCheckingSession.value = false
-                            listenToCurrentUserSession(onRoleChanged, onExpired)
-                            onResult(true, "Selamat Datang Kembali!")
-                        }
-                    } else {
-                        // New User Registration (Auto-register for now or handle trial)
-                        val newUser = com.equinox.virtual.model.FirestoreUser(
-                            uid = currentDeviceHwid,
-                            role = "member",
-                            expiredAt = System.currentTimeMillis() + (24L * 60 * 60 * 1000), // 1 day trial
-                            status = "active",
-                            createdAt = System.currentTimeMillis()
-                        )
-                        
-                        db.collection("users").document(currentDeviceHwid).set(newUser)
-                            .addOnSuccessListener {
+
+                            if (System.currentTimeMillis() > expiredAt && role == "member") {
+                                _isCheckingSession.value = false
+                                onResult(false, "Masa aktif lisensi Anda telah berakhir!")
+                            } else {
                                 _currentUserSession.value = currentDeviceHwid
-                                _expiryTime.value = newUser.expiredAt
-                                _userRole.value = newUser.role
+                                _expiryTime.value = expiredAt
+                                _userRole.value = role
                                 _isRegisteredDevice.value = true
                                 
                                 prefs.edit()
                                     .putString("auth_uid", currentDeviceHwid)
-                                    .putLong("auth_expiry", newUser.expiredAt)
-                                    .putString("auth_role", newUser.role)
+                                    .putLong("auth_expiry", expiredAt)
+                                    .putString("auth_role", role)
                                     .putBoolean("is_registered_device", true)
                                     .apply()
 
-                                onRoleChanged("Member (Trial)")
+                                val roleDisplay = when (role.lowercase()) {
+                                    "admin" -> "Administrator"
+                                    "reseller" -> "Reseller"
+                                    else -> "Member"
+                                }
+                                onRoleChanged(roleDisplay)
                                 _isCheckingSession.value = false
                                 listenToCurrentUserSession(onRoleChanged, onExpired)
-                                onResult(true, "Pendaftaran Berhasil! Nikmati akses trial 24 jam.")
+                                onResult(true, "Selamat Datang Kembali!")
                             }
-                            .addOnFailureListener { e ->
-                                _isCheckingSession.value = false
-                                onResult(false, "Pendaftaran Gagal: ${e.message}")
-                            }
+                        } else {
+                            // New User Registration (Auto-register for now or handle trial)
+                            val newUser = com.equinox.virtual.model.FirestoreUser(
+                                uid = currentDeviceHwid,
+                                role = "member",
+                                expiredAt = System.currentTimeMillis() + (24L * 60 * 60 * 1000), // 1 day trial
+                                status = "active",
+                                createdAt = System.currentTimeMillis()
+                            )
+                            
+                            db.collection("users").document(currentDeviceHwid).set(newUser)
+                                .addOnSuccessListener {
+                                    _currentUserSession.value = currentDeviceHwid
+                                    _expiryTime.value = newUser.expiredAt
+                                    _userRole.value = newUser.role
+                                    _isRegisteredDevice.value = true
+                                    
+                                    prefs.edit()
+                                        .putString("auth_uid", currentDeviceHwid)
+                                        .putLong("auth_expiry", newUser.expiredAt)
+                                        .putString("auth_role", newUser.role)
+                                        .putBoolean("is_registered_device", true)
+                                        .apply()
+
+                                    onRoleChanged("Member (Trial)")
+                                    _isCheckingSession.value = false
+                                    listenToCurrentUserSession(onRoleChanged, onExpired)
+                                    onResult(true, "Pendaftaran Berhasil! Nikmati akses trial 24 jam.")
+                                }
+                                .addOnFailureListener { e ->
+                                    _isCheckingSession.value = false
+                                    onResult(false, "Pendaftaran Gagal: ${e.message}")
+                                }
+                        }
+                    } catch (e: Exception) {
+                        Log.e("AuthAndUserManager", "Error processing snapshot: ${e.message}", e)
+                        _isCheckingSession.value = false
+                        onResult(false, "Error data: ${e.message}")
                     }
                 }
                 .addOnFailureListener { e ->
+                    Log.e("AuthAndUserManager", "Firestore get failure", e)
                     _isCheckingSession.value = false
                     onResult(false, "Gagal terhubung ke server: ${e.message}")
                 }
         } catch (e: Exception) {
+            Log.e("AuthAndUserManager", "Critical error in authenticateDevice: ${e.message}", e)
             _isCheckingSession.value = false
-            onResult(false, "Terjadi kesalahan: ${e.message}")
+            onResult(false, "Terjadi kesalahan sistem: ${e.message}")
         }
     }
 

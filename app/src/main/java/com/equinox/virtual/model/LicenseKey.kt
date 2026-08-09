@@ -1,5 +1,8 @@
 package com.equinox.virtual.model
 
+import androidx.annotation.Keep
+
+@Keep
 data class LicenseKey(
     val key: String = "",
     val durationDays: Int = 0,

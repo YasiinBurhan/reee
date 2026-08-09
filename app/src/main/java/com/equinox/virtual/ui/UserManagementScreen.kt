@@ -329,7 +329,7 @@ fun UserCard(
                     }
                 }
                 
-                if (isAdmin && user.role == "user") {
+                if (isAdmin && user.role.lowercase() == "member") {
                     IconButton(onClick = onPromote) {
                         Icon(
                             imageVector = Icons.Default.PersonAdd, 
