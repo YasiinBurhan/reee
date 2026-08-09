@@ -32,7 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.equinox.virtual.BlackBoxApp
+import com.equinox.virtual.EQuinoxApp
 import com.equinox.virtual.R
 import com.equinox.virtual.viewmodel.BlackBoxViewModel
 import kotlinx.coroutines.launch
@@ -51,7 +51,7 @@ fun LoginScreen(
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
     val snackbarHostState = remember { SnackbarHostState() }
-    val deviceHwid = remember { BlackBoxApp.getDeviceHwid() }
+    val deviceHwid = remember { EQuinoxApp.getDeviceHwid() }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },

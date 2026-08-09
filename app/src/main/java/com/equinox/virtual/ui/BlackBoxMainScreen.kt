@@ -160,7 +160,7 @@ fun BlackBoxMainScreen(
                                     .clickable {
                                         if (currentUserId == 0) {
                                             val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                                            val clip = android.content.ClipData.newPlainText("UID", com.equinox.virtual.BlackBoxApp.getDeviceHwid())
+                                            val clip = android.content.ClipData.newPlainText("UID", com.equinox.virtual.EQuinoxApp.getDeviceHwid())
                                             clipboard.setPrimaryClip(clip)
                                             android.widget.Toast.makeText(context, "UID berhasil disalin!", android.widget.Toast.LENGTH_SHORT).show()
                                         }
@@ -171,7 +171,7 @@ fun BlackBoxMainScreen(
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
                                 ) {
                                     Text(
-                                        text = if (currentUserId == 0) "UID: ${com.equinox.virtual.BlackBoxApp.getDeviceHwid()}" else "Ruang $currentUserId",
+                                        text = if (currentUserId == 0) "UID: ${com.equinox.virtual.EQuinoxApp.getDeviceHwid()}" else "Ruang $currentUserId",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         maxLines = 1,

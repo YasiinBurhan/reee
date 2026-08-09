@@ -3,7 +3,7 @@ package com.equinox.virtual.manager
 import android.app.Application
 import android.content.SharedPreferences
 import android.util.Log
-import com.equinox.virtual.BlackBoxApp
+import com.equinox.virtual.EQuinoxApp
 import com.equinox.virtual.model.FirestoreUser
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
@@ -43,7 +43,7 @@ class AuthAndUserManager(
     private var usersCollectionListenerRegistration: ListenerRegistration? = null
 
     fun getFirestoreDb(): FirebaseFirestore {
-        val app = BlackBoxApp.initFirebase(application)
+        val app = EQuinoxApp.initFirebase(application)
         return if (app != null) {
             FirebaseFirestore.getInstance(app)
         } else {
@@ -55,7 +55,7 @@ class AuthAndUserManager(
         onRoleChanged: (String) -> Unit,
         onExpired: () -> Unit
     ) {
-        val currentDeviceHwid = BlackBoxApp.getDeviceHwid()
+        val currentDeviceHwid = EQuinoxApp.getDeviceHwid()
         val savedAuth = prefs.getString("auth_uid", null)
         if (savedAuth.isNullOrEmpty()) return
 
@@ -125,7 +125,7 @@ class AuthAndUserManager(
         onExpired: () -> Unit,
         onResult: (Boolean, String) -> Unit
     ) {
-        val currentDeviceHwid = BlackBoxApp.getDeviceHwid()
+        val currentDeviceHwid = EQuinoxApp.getDeviceHwid()
         try {
             val db = getFirestoreDb()
             val userDocRef = db.collection("users").document(currentDeviceHwid)

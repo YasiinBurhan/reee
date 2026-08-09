@@ -182,7 +182,7 @@ fun UserSelectorSection(
                 modifier = Modifier.clickable {
                     if (currentUserId == 0) {
                         val clipboard = mContext.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                        val clip = android.content.ClipData.newPlainText("UID", com.equinox.virtual.BlackBoxApp.getDeviceHwid())
+                        val clip = android.content.ClipData.newPlainText("UID", com.equinox.virtual.EQuinoxApp.getDeviceHwid())
                         clipboard.setPrimaryClip(clip)
                         android.widget.Toast.makeText(mContext, "UID berhasil disalin!", android.widget.Toast.LENGTH_SHORT).show()
                     }
@@ -193,7 +193,7 @@ fun UserSelectorSection(
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = if (currentUserId == 0) com.equinox.virtual.BlackBoxApp.getDeviceHwid() else "Ruang $currentUserId",
+                        text = if (currentUserId == 0) com.equinox.virtual.EQuinoxApp.getDeviceHwid() else "Ruang $currentUserId",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,

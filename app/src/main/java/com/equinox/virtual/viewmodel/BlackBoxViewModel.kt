@@ -34,15 +34,9 @@ class BlackBoxViewModel(application: Application) : AndroidViewModel(application
     private val allowedPackagesManager = AllowedPackagesManager {
         authUserManager.getFirestoreDb()
     }
-    private val allowedSignaturesManager = com.equinox.virtual.manager.AllowedSignaturesManager(settingsManager.getPrefs()) {
-        authUserManager.getFirestoreDb()
-    }
 
     val allowedPackages: StateFlow<Set<String>> = allowedPackagesManager.allowedPackages
     val allowedPackageList: StateFlow<List<AllowedPackage>> = allowedPackagesManager.allowedPackageList
-
-    val allowedSignatures: StateFlow<Set<String>> = allowedSignaturesManager.allowedSignatures
-    val allowedSignatureList: StateFlow<List<com.equinox.virtual.model.AllowedSignature>> = allowedSignaturesManager.allowedSignatureList
 
     val deviceSpoofingEnabled: StateFlow<Boolean> = settingsManager.deviceSpoofingEnabled
     val gmsProxyEnabled: StateFlow<Boolean> = settingsManager.gmsProxyEnabled
@@ -77,51 +71,9 @@ class BlackBoxViewModel(application: Application) : AndroidViewModel(application
 
     init {
         listenToAllowedPackages()
-        listenToAllowedSignatures()
         checkEngineStatus()
         refreshAll()
         validateSession()
-    }
-
-    fun listenToAllowedSignatures() {
-        allowedSignaturesManager.listenToAllowedSignatures()
-    }
-
-    fun addAllowedSignature(signature: String, description: String) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            val currentUserUid = authUserManager.currentUserSession.value ?: "Admin"
-            allowedSignaturesManager.addAllowedSignature(
-                signature = signature,
-                description = description,
-                addedBy = currentUserUid,
-                onSuccess = {
-                    _isLoading.value = false
-                    viewModelScope.launch { _snackbarMessage.emit("Berhasil mendaftarkan signature: $signature") }
-                },
-                onFailure = { errorMsg ->
-                    _isLoading.value = false
-                    viewModelScope.launch { _snackbarMessage.emit(errorMsg) }
-                }
-            )
-        }
-    }
-
-    fun deleteAllowedSignature(signature: String) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            allowedSignaturesManager.deleteAllowedSignature(
-                signature = signature,
-                onSuccess = {
-                    _isLoading.value = false
-                    viewModelScope.launch { _snackbarMessage.emit("Berhasil menghapus signature: $signature") }
-                },
-                onFailure = { errorMsg ->
-                    _isLoading.value = false
-                    viewModelScope.launch { _snackbarMessage.emit(errorMsg) }
-                }
-            )
-        }
     }
 
     fun listenToAllowedPackages() {

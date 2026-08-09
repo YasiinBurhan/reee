@@ -26,11 +26,6 @@ class MainActivity : ComponentActivity() {
             val currentUserSession by viewModel.currentUserSession.collectAsState()
             val isCheckingSession by viewModel.isCheckingSession.collectAsState()
 
-            val isTampered = androidx.compose.runtime.remember { com.equinox.virtual.helper.AntiTamper.isAppTampered(applicationContext) }
-            if (isTampered) {
-                throw SecurityException("App integrity check failed!")
-            }
-
             MyApplicationTheme(darkTheme = useDarkTheme) {
                 if (isCheckingSession) {
                     androidx.compose.foundation.layout.Box(

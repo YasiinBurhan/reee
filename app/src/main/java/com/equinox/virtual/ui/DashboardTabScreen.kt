@@ -108,7 +108,7 @@ fun DashboardTabScreen(
                                         .clickable {
                                             if (currentUserId == 0) {
                                                 val clipboard = mContext.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                                                val clip = android.content.ClipData.newPlainText("UID", com.equinox.virtual.BlackBoxApp.getDeviceHwid())
+                                                val clip = android.content.ClipData.newPlainText("UID", com.equinox.virtual.EQuinoxApp.getDeviceHwid())
                                                 clipboard.setPrimaryClip(clip)
                                                 android.widget.Toast.makeText(mContext, "UID berhasil disalin!", android.widget.Toast.LENGTH_SHORT).show()
                                             }
@@ -116,7 +116,7 @@ fun DashboardTabScreen(
                                         .padding(vertical = 2.dp)
                                 ) {
                                     Text(
-                                        text = if (currentUserId == 0) "UID: ${com.equinox.virtual.BlackBoxApp.getDeviceHwid()}" else "Sandbox Anti-Deteksi • Ruang $currentUserId",
+                                        text = if (currentUserId == 0) "UID: ${com.equinox.virtual.EQuinoxApp.getDeviceHwid()}" else "Sandbox Anti-Deteksi • Ruang $currentUserId",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                                         maxLines = 1,

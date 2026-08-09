@@ -8,11 +8,11 @@ import top.niunaijun.blackbox.BlackBoxCore
 import top.niunaijun.blackbox.app.configuration.ClientConfiguration
 import java.io.File
 
-class BlackBoxApp : Application() {
+class EQuinoxApp : Application() {
 
     companion object {
-        private const val TAG = "BlackBoxApp"
-        private lateinit var instance: BlackBoxApp
+        private const val TAG = "EQuinoxApp"
+        private lateinit var instance: EQuinoxApp
 
         fun getContext(): Context = instance.applicationContext
 

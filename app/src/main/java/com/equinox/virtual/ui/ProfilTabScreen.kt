@@ -122,7 +122,7 @@ fun ProfilTabScreen(
                                 .clickable {
                                     if (currentUserId == 0) {
                                         val clipboard = mContext.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                                        val clip = android.content.ClipData.newPlainText("UID", com.equinox.virtual.BlackBoxApp.getDeviceHwid())
+                                        val clip = android.content.ClipData.newPlainText("UID", com.equinox.virtual.EQuinoxApp.getDeviceHwid())
                                         clipboard.setPrimaryClip(clip)
                                         android.widget.Toast.makeText(mContext, "UID berhasil disalin!", android.widget.Toast.LENGTH_SHORT).show()
                                     }
@@ -130,7 +130,7 @@ fun ProfilTabScreen(
                                 .padding(vertical = 2.dp)
                         ) {
                             Text(
-                                text = if (currentUserId == 0) "UID: ${com.equinox.virtual.BlackBoxApp.getDeviceHwid()}" else "ID Ruang Pengguna: $currentUserId",
+                                text = if (currentUserId == 0) "UID: ${com.equinox.virtual.EQuinoxApp.getDeviceHwid()}" else "ID Ruang Pengguna: $currentUserId",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Bold
