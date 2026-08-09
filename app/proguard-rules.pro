@@ -16,6 +16,16 @@
 # debugging stack traces.
 #-keepattributes SourceFile,LineNumberTable
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# BlackBox Core & Virtual Framework Keep Rules
+-keep class top.niunaijun.blackbox.** { *; }
+-keep class top.niunaijun.jnihook.** { *; }
+-keep class com.equinox.virtual.** { *; }
+-keep class black.** { *; }
+
+# Preserve JNI methods
+-keepclasseswithmembernames class * {
+    native <methods>;
+}
+
+# Preserve Reflection / Serialization / Annotations
+-keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod,Exceptions,SourceFile,LineNumberTable
