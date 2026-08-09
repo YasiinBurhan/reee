@@ -14,7 +14,7 @@ android {
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
   defaultConfig {
-    applicationId = "com.aistudio.equinoxvirtual.fghijk"
+    applicationId = "com.equinox.virtual"
     minSdk = 24
     targetSdk = 36
     versionCode = 1
@@ -26,10 +26,19 @@ android {
   signingConfigs {
     create("release") {
       val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
-      storeFile = file(keystorePath)
-      storePassword = System.getenv("STORE_PASSWORD")
-      keyAlias = "upload"
-      keyPassword = System.getenv("KEY_PASSWORD")
+      val ksFile = file(keystorePath)
+      if (ksFile.exists()) {
+        storeFile = ksFile
+        storePassword = System.getenv("STORE_PASSWORD")
+        keyAlias = "upload"
+        keyPassword = System.getenv("KEY_PASSWORD")
+      } else {
+        val debugKs = file("${rootDir}/debug.keystore")
+        storeFile = if (debugKs.exists()) debugKs else file("${rootDir}/my-upload-key.jks")
+        storePassword = "android"
+        keyAlias = "androiddebugkey"
+        keyPassword = "android"
+      }
     }
     create("debugConfig") {
       storeFile = file("${rootDir}/debug.keystore")
