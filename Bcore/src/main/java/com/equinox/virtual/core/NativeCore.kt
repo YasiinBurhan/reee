@@ -46,10 +46,6 @@ object NativeCore {
     @JvmStatic
     external fun disableResourceLoading(): Boolean
 
-
-    @JvmStatic
-    external fun nativeRender(width: Int, height: Int)
-
     private var sCallback: DrawingCallback? = null
 
     @Keep
