@@ -326,22 +326,72 @@ class AuthAndUserManager(
         onFailure: (String) -> Unit
     ) {
         try {
+            val db = getFirestoreDb()
+            val currentUid = prefs.getString("auth_uid", "") ?: ""
+            val currentUserRole = _userRole.value?.lowercase() ?: "member"
+            
             val filteredUpdates = updates.toMutableMap()
-            if (_userRole.value?.lowercase() != "admin") {
+            
+            // Security check: only admins can update balance or status to banned for others
+            if (currentUserRole != "admin") {
                 filteredUpdates.remove("balance")
+                if (filteredUpdates.containsKey("status") && filteredUpdates["status"] == "banned") {
+                    filteredUpdates.remove("status")
+                }
             }
+
             if (filteredUpdates.isEmpty()) {
                 onSuccess()
                 return
             }
-            val db = getFirestoreDb()
-            db.collection("users").document(uid).update(filteredUpdates)
-                .addOnSuccessListener {
+
+            // If a reseller is adding days (expiredAt updated), deduct balance based on days
+            val isAddingDays = updates.containsKey("expiredAt")
+            val daysAdded = updates["daysAdded"] as? Long ?: 0L
+            
+            if (currentUserRole == "reseller" && isAddingDays) {
+                db.runTransaction { transaction ->
+                    val resellerRef = db.collection("users").document(currentUid)
+                    val targetUserRef = db.collection("users").document(uid)
+                    
+                    val resellerDoc = transaction.get(resellerRef)
+                    val balance = resellerDoc.getLong("balance") ?: 0L
+                    
+                    val cost = when {
+                        daysAdded >= 365 -> 1500000L // Yearly bulk discount maybe? Or just keep it.
+                        daysAdded >= 30 -> 150000L
+                        daysAdded >= 7 -> 40000L
+                        daysAdded >= 3 -> 20000L
+                        else -> 10000L * daysAdded // 10k per day for others
+                    }
+                    
+                    if (balance < cost) {
+                        throw Exception("Saldo tidak cukup! Biaya: Rp $cost, Saldo Anda: Rp $balance")
+                    }
+                    
+                    val finalUpdates = filteredUpdates.toMutableMap()
+                    finalUpdates.remove("daysAdded")
+                    
+                    transaction.update(targetUserRef, finalUpdates)
+                    transaction.update(resellerRef, "balance", com.google.firebase.firestore.FieldValue.increment(-cost))
+                }.addOnSuccessListener {
                     onSuccess()
-                }
-                .addOnFailureListener { e ->
+                }.addOnFailureListener { e ->
                     onFailure(e.message ?: "Gagal memperbarui")
                 }
+            } else {
+                // Admin or no days added by reseller
+                val finalUpdates = filteredUpdates.toMutableMap()
+                finalUpdates.remove("daysAdded")
+                
+                db.collection("users").document(uid).update(finalUpdates)
+                    .addOnSuccessListener {
+                        onSuccess()
+                    }
+                    .addOnFailureListener { e ->
+                        onFailure(e.message ?: "Gagal memperbarui")
+                    }
+            }
         } catch (e: Exception) {
             onFailure(e.message ?: "Error")
         }

@@ -125,13 +125,17 @@ class EQuinoxApp : Application() {
             Log.e(TAG, "onBeforeMainApplicationAttach error: ${e.message}")
         }
         try {
+            val prefs = base?.getSharedPreferences("equinox_virtual_prefs", Context.MODE_PRIVATE)
+            val rootHide = prefs?.getBoolean("root_hide", true) ?: true
+            val gmsProxy = prefs?.getBoolean("gms_proxy", true) ?: true
+
             BlackBoxCore.get().doAttachBaseContext(base, object : ClientConfiguration() {
                 override fun getHostPackageName(): String {
                     return packageName
                 }
 
                 override fun isHideRoot(): Boolean {
-                    return false
+                    return rootHide
                 }
 
                 override fun isEnableDaemonService(): Boolean {

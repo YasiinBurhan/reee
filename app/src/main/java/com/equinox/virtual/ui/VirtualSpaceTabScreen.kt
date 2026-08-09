@@ -82,6 +82,8 @@ fun VirtualSpaceTabScreen(
     onUninstallVirtualApp: (String) -> Unit,
     onCloneHostApp: (String) -> Unit
 ) {
+    val tabs = listOf("SANDBOX", "PERANGKAT")
+
     Column(modifier = Modifier.fillMaxSize()) {
         // iOS style Segmented Control
         Surface(

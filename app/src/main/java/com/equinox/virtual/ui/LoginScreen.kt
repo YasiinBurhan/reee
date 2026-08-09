@@ -164,7 +164,12 @@ fun LoginScreen(
                     Text(
                         text = if (isRegisteredDevice) {
                             val expiryTime by viewModel.expiryTime.collectAsState()
-                            if (expiryTime != null && expiryTime!! > 0) {
+                            val userRole by viewModel.userRole.collectAsState()
+                            val roleLower = userRole?.lowercase() ?: "member"
+                            
+                            if (roleLower == "admin" || roleLower == "reseller") {
+                                "Akses Perangkat Terverifikasi (Status: ${roleLower.uppercase()})"
+                            } else if (expiryTime != null && expiryTime!! > 0) {
                                 val sdf = java.text.SimpleDateFormat("dd MMM yyyy, HH:mm", java.util.Locale.getDefault())
                                 "Masa aktif perangkat Anda berlaku hingga: ${sdf.format(java.util.Date(expiryTime!!))}"
                             } else {

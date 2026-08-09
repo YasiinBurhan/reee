@@ -93,8 +93,11 @@ fun ProfilTabScreen(
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(modifier = Modifier.height(4.dp))
-                        val expiryStr = remember(expiryTime) {
-                            if (expiryTime != null && expiryTime > 0L) {
+                        val expiryStr = remember(expiryTime, userRole) {
+                            val roleLower = userRole?.lowercase() ?: "member"
+                            if (roleLower == "admin" || roleLower == "reseller") {
+                                "Masa aktif: Selamanya"
+                            } else if (expiryTime != null && expiryTime > 0L) {
                                 val sdf = java.text.SimpleDateFormat("dd MMM yyyy", java.util.Locale.getDefault())
                                 "Masa aktif: " + sdf.format(java.util.Date(expiryTime))
                             } else {

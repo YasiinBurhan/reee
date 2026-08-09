@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -108,6 +109,9 @@ fun BlackBoxMainScreen(
     var selectedTab by remember { mutableIntStateOf(0) } 
     var selectedBottomNavIndex by remember { mutableIntStateOf(2) }
 
+    // Sub-screens state for settings
+    var activeSettingsSubScreen by remember { mutableStateOf<String?>(null) }
+
     val snackbarHostState = remember { SnackbarHostState() }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -121,119 +125,124 @@ fun BlackBoxMainScreen(
         modifier = modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = when (selectedBottomNavIndex) {
-                            0 -> "Beranda"
-                            1 -> "Unduh"
-                            2 -> "Virtual"
-                            3 -> "Profil"
-                            4 -> "Pengaturan"
-                            else -> "EQuinox"
-                        },
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                actions = {
-                    IconButton(
-                        onClick = { viewModel.toggleTheme(isDarkTheme) }
-                    ) {
-                        Icon(
-                            imageVector = if (isDarkTheme) Icons.Filled.LightMode else Icons.Filled.DarkMode,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
+            if (activeSettingsSubScreen == null) {
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = when (selectedBottomNavIndex) {
+                                0 -> "Beranda"
+                                1 -> "Unduh"
+                                2 -> "Virtual"
+                                3 -> "Profil"
+                                4 -> "Pengaturan"
+                                else -> "EQuinox"
+                            },
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
                         )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
-                )
-            )
-        },
-        bottomBar = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 20.dp)
-                    .navigationBarsPadding()
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(32.dp),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                    shadowElevation = 8.dp,
-                    tonalElevation = 0.dp,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    NavigationBar(
-                        containerColor = Color.Transparent,
-                        tonalElevation = 0.dp,
-                        modifier = Modifier.height(80.dp)
-                    ) {
-                        val navItems = listOf(
-                            Triple(0, Icons.Default.Home, "Beranda"),
-                            Triple(1, Icons.Default.Download, "Unduh"),
-                            Triple(2, Icons.Default.Layers, "Virtual"),
-                            Triple(3, Icons.Default.Person, "Profil")
-                        )
-
-                        navItems.forEach { (index, icon, label) ->
-                            NavigationBarItem(
-                                selected = selectedBottomNavIndex == index,
-                                onClick = { selectedBottomNavIndex = index },
-                                icon = {
-                                    if (index == 2) {
-                                        BadgedBox(
-                                            badge = {
-                                                if (virtualApps.isNotEmpty()) {
-                                                    Badge(containerColor = iOSRed) { Text("${virtualApps.size}") }
-                                                }
-                                            }
-                                        ) {
-                                            Icon(icon, contentDescription = label)
-                                        }
-                                    } else {
-                                        Icon(icon, contentDescription = label)
-                                    }
-                                },
-                                label = { Text(label, style = MaterialTheme.typography.labelMedium) },
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = MaterialTheme.colorScheme.primary,
-                                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    indicatorColor = Color.Transparent,
-                                    selectedTextColor = MaterialTheme.colorScheme.primary,
-                                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                    },
+                    actions = {
+                        IconButton(
+                            onClick = { viewModel.toggleTheme(isDarkTheme) }
+                        ) {
+                            Icon(
+                                imageVector = if (isDarkTheme) Icons.Filled.LightMode else Icons.Filled.DarkMode,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
                             )
                         }
-
-                        val isPrivilegedUser = userRole?.lowercase() == "admin" || userRole?.lowercase() == "reseller"
-                        if (isPrivilegedUser) {
-                            NavigationBarItem(
-                                selected = selectedBottomNavIndex == 4,
-                                onClick = { selectedBottomNavIndex = 4 },
-                                icon = { Icon(Icons.Default.Settings, contentDescription = "Setting") },
-                                label = { Text("Setting", style = MaterialTheme.typography.labelMedium) },
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = MaterialTheme.colorScheme.primary,
-                                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    indicatorColor = Color.Transparent,
-                                    selectedTextColor = MaterialTheme.colorScheme.primary,
-                                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                        scrolledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
+                    )
+                )
+            }
+        },
+        bottomBar = {
+            if (activeSettingsSubScreen == null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 20.dp)
+                        .navigationBarsPadding()
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(32.dp),
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                        shadowElevation = 8.dp,
+                        tonalElevation = 0.dp,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        NavigationBar(
+                            containerColor = Color.Transparent,
+                            tonalElevation = 0.dp,
+                            modifier = Modifier.height(80.dp)
+                        ) {
+                            val navItems = listOf(
+                                Triple(0, Icons.Default.Home, "Beranda"),
+                                Triple(1, Icons.Default.Download, "Unduh"),
+                                Triple(2, Icons.Default.Layers, "Virtual"),
+                                Triple(3, Icons.Default.Person, "Profil")
                             )
+
+                            navItems.forEach { (index, icon, label) ->
+                                NavigationBarItem(
+                                    selected = selectedBottomNavIndex == index,
+                                    onClick = { selectedBottomNavIndex = index },
+                                    icon = {
+                                        if (index == 2) {
+                                            BadgedBox(
+                                                badge = {
+                                                    if (virtualApps.isNotEmpty()) {
+                                                        Badge(containerColor = iOSRed) { Text("${virtualApps.size}") }
+                                                    }
+                                                }
+                                            ) {
+                                                Icon(icon, contentDescription = label)
+                                            }
+                                        } else {
+                                            Icon(icon, contentDescription = label)
+                                        }
+                                    },
+                                    label = { Text(label, style = MaterialTheme.typography.labelMedium) },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        indicatorColor = Color.Transparent,
+                                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                )
+                            }
+
+                            val isPrivilegedUser = userRole?.lowercase() == "admin" || userRole?.lowercase() == "reseller"
+                            if (isPrivilegedUser) {
+                                NavigationBarItem(
+                                    selected = selectedBottomNavIndex == 4,
+                                    onClick = { selectedBottomNavIndex = 4 },
+                                    icon = { Icon(Icons.Default.Settings, contentDescription = "Setting") },
+                                    label = { Text("Setting", style = MaterialTheme.typography.labelMedium) },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        indicatorColor = Color.Transparent,
+                                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                )
+                            }
                         }
                     }
                 }
             }
         }
     ) { paddingValues ->
+        val contentPadding = if (activeSettingsSubScreen != null) PaddingValues(0.dp) else paddingValues
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(contentPadding)
         ) {
             // Engine Initialization Progress Banner
             if (!engineInitialized || engineProgress < 1.0f) {
@@ -313,10 +322,53 @@ fun BlackBoxMainScreen(
                         expiryTime = expiryTime,
                         userRole = userRole
                     )
-                    4 -> SettingTabScreen(
-                        userRole = userRole,
-                        viewModel = viewModel
-                    )
+                    4 -> {
+                        when (activeSettingsSubScreen) {
+                            "user_management" -> {
+                                val users by viewModel.firestoreUsers.collectAsState()
+                                val isLoadingUser by viewModel.isLoading.collectAsState()
+                                LaunchedEffect(Unit) { viewModel.fetchFirestoreUsers() }
+                                UserManagementScreen(
+                                    users = users,
+                                    isLoading = isLoadingUser,
+                                    currentUserRole = userRole,
+                                    onBack = { activeSettingsSubScreen = null },
+                                    onUpdateUser = { uid, updates -> viewModel.updateFirestoreUser(uid, updates) },
+                                    onDeleteUser = { uid -> viewModel.deleteFirestoreUser(uid) }
+                                )
+                            }
+                            "allowed_packages" -> {
+                                val packages by viewModel.allowedPackageList.collectAsState()
+                                val isLoadingPackages by viewModel.isLoading.collectAsState()
+                                AllowedPackagesManagementScreen(
+                                    packages = packages,
+                                    isLoading = isLoadingPackages,
+                                    onBack = { activeSettingsSubScreen = null },
+                                    onAddPackage = { pkg, name -> viewModel.addAllowedPackage(pkg, name) },
+                                    onDeletePackage = { pkg -> viewModel.deleteAllowedPackage(pkg) }
+                                )
+                            }
+                            "system_stats" -> {
+                                val stats by viewModel.systemStats.collectAsState()
+                                val isLoadingStats by viewModel.isLoading.collectAsState()
+                                LaunchedEffect(Unit) { viewModel.fetchSystemStats() }
+                                SystemStatisticsScreen(
+                                    stats = stats,
+                                    isLoading = isLoadingStats,
+                                    onBack = { activeSettingsSubScreen = null }
+                                )
+                            }
+                            else -> {
+                                SettingTabScreen(
+                                    userRole = userRole,
+                                    viewModel = viewModel,
+                                    onNavigateToUserManagement = { activeSettingsSubScreen = "user_management" },
+                                    onNavigateToAllowedPackages = { activeSettingsSubScreen = "allowed_packages" },
+                                    onNavigateToSystemStats = { activeSettingsSubScreen = "system_stats" }
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }

@@ -28,7 +28,8 @@ fun UserManagementScreen(
     onUpdateUser: (String, Map<String, Any>) -> Unit,
     onDeleteUser: (String) -> Unit
 ) {
-    var showEditDialog by remember { mutableStateOf<FirestoreUser?>(null) }
+    var showQuickAddDialog by remember { mutableStateOf<FirestoreUser?>(null) }
+    var showTopUpDialog by remember { mutableStateOf<FirestoreUser?>(null) }
     var searchQuery by remember { mutableStateOf("") }
     var currentPage by remember { mutableIntStateOf(1) }
     val itemsPerPage = 10
@@ -113,8 +114,16 @@ fun UserManagementScreen(
                         items(paginatedUsers) { user ->
                             UserCard(
                                 user = user,
-                                onEdit = { showEditDialog = user },
-                                onDelete = { onDeleteUser(user.uid) }
+                                currentUserRole = currentUserRole,
+                                onDelete = { onDeleteUser(user.uid) },
+                                onQuickAdd = { showQuickAddDialog = user },
+                                onPromote = {
+                                    onUpdateUser(user.uid, mapOf(
+                                        "role" to "reseller",
+                                        "balance" to 250000L
+                                    ))
+                                },
+                                onTopUp = { showTopUpDialog = user }
                             )
                         }
                     }
@@ -152,14 +161,32 @@ fun UserManagementScreen(
             }
         }
 
-        showEditDialog?.let { user ->
-            EditUserDialog(
+        showQuickAddDialog?.let { user ->
+            QuickAddDaysDialog(
                 user = user,
                 currentUserRole = currentUserRole,
-                onDismiss = { showEditDialog = null },
-                onConfirm = { updates ->
-                    onUpdateUser(user.uid, updates)
-                    showEditDialog = null
+                onDismiss = { showQuickAddDialog = null },
+                onConfirm = { days ->
+                    val currentExpiry = if (user.expiredAt > System.currentTimeMillis()) user.expiredAt else System.currentTimeMillis()
+                    val newExpiry = currentExpiry + (days * 24 * 60 * 60 * 1000)
+                    onUpdateUser(user.uid, mapOf(
+                        "expiredAt" to newExpiry,
+                        "daysAdded" to days
+                    ))
+                    showQuickAddDialog = null
+                }
+            )
+        }
+
+        showTopUpDialog?.let { user ->
+            TopUpBalanceDialog(
+                user = user,
+                onDismiss = { showTopUpDialog = null },
+                onConfirm = { amount ->
+                    onUpdateUser(user.uid, mapOf(
+                        "balance" to com.google.firebase.firestore.FieldValue.increment(amount)
+                    ))
+                    showTopUpDialog = null
                 }
             )
         }
@@ -167,11 +194,85 @@ fun UserManagementScreen(
 }
 
 @Composable
+fun QuickAddDaysDialog(
+    user: FirestoreUser,
+    currentUserRole: String?,
+    onDismiss: () -> Unit,
+    onConfirm: (Long) -> Unit
+) {
+    var selectedDays by remember { mutableLongStateOf(30L) }
+    val isReseller = currentUserRole?.lowercase() == "reseller"
+
+    val cost = when {
+        selectedDays >= 365 -> 1500000L
+        selectedDays >= 30 -> 150000L
+        selectedDays >= 7 -> 40000L
+        selectedDays >= 3 -> 20000L
+        else -> 10000L * selectedDays
+    }
+
+    val currencyFormatter = java.text.NumberFormat.getCurrencyInstance(Locale("in", "ID"))
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Aktivasi Cepat") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("Tambah masa aktif untuk ${user.uid}")
+                
+                if (isReseller) {
+                    Text(
+                        text = "Biaya: ${currencyFormatter.format(cost)}",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf(1L, 3L, 7L, 30L).forEach { days ->
+                        FilterChip(
+                            selected = selectedDays == days,
+                            onClick = { selectedDays = days },
+                            label = { Text("${days}H") }
+                        )
+                    }
+                }
+                
+                Text(
+                    text = "Masa aktif akan dihitung dari waktu sekarang atau waktu expired terakhir (mana yang lebih baru).",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = { onConfirm(selectedDays) }) {
+                Text("Tambahkan")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Batal")
+            }
+        }
+    )
+}
+
+@Composable
 fun UserCard(
     user: FirestoreUser,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit
+    currentUserRole: String?,
+    onDelete: () -> Unit,
+    onQuickAdd: () -> Unit,
+    onPromote: () -> Unit,
+    onTopUp: () -> Unit
 ) {
+    val isAdmin = currentUserRole?.lowercase() == "admin"
+    
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
@@ -219,7 +320,7 @@ fun UserCard(
                         if (user.role == "reseller") {
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Saldo: ${user.balance}",
+                                text = "Saldo: Rp ${user.balance}",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
@@ -228,11 +329,34 @@ fun UserCard(
                     }
                 }
                 
-                IconButton(onClick = onEdit) {
-                    Icon(Icons.Default.Edit, contentDescription = "Edit", tint = MaterialTheme.colorScheme.primary)
+                if (isAdmin && user.role == "user") {
+                    IconButton(onClick = onPromote) {
+                        Icon(
+                            imageVector = Icons.Default.PersonAdd, 
+                            contentDescription = "Angkat Reseller", 
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
-                IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, contentDescription = "Hapus", tint = MaterialTheme.colorScheme.error)
+
+                if (isAdmin && user.role == "reseller") {
+                    IconButton(onClick = onTopUp) {
+                        Icon(
+                            imageVector = Icons.Default.AccountBalanceWallet, 
+                            contentDescription = "Top Up Saldo", 
+                            tint = Color(0xFFFF9800)
+                        )
+                    }
+                }
+
+                IconButton(onClick = onQuickAdd) {
+                    Icon(Icons.Default.AddCircle, contentDescription = "Quick Add", tint = Color(0xFF4CAF50))
+                }
+
+                if (isAdmin) {
+                    IconButton(onClick = onDelete) {
+                        Icon(Icons.Default.Delete, contentDescription = "Hapus", tint = MaterialTheme.colorScheme.error)
+                    }
                 }
             }
             
@@ -243,126 +367,60 @@ fun UserCard(
             )
             
             val sdf = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault())
-            Text(
+                Text(
                 text = "Expired: ${sdf.format(Date(user.expiredAt))}",
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
 }
 
 @Composable
-fun EditUserDialog(
+fun TopUpBalanceDialog(
     user: FirestoreUser,
-    currentUserRole: String? = null,
     onDismiss: () -> Unit,
-    onConfirm: (Map<String, Any>) -> Unit
+    onConfirm: (Long) -> Unit
 ) {
-    var role by remember { mutableStateOf(user.role) }
-    var daysToAdd by remember { mutableStateOf("0") }
-    var balanceToAdd by remember { mutableStateOf("0") }
-
-    val isAdmin = currentUserRole?.lowercase() == "admin"
-    val isTargetReseller = role == "reseller" || user.role == "reseller"
-
+    var amountText by remember { mutableStateOf("100000") }
+    
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Edit Pengguna") },
+        title = { Text("Top Up Saldo Reseller") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("UID: ${user.uid}", style = MaterialTheme.typography.bodySmall)
-                
-                Text("Pilih Role:", style = MaterialTheme.typography.labelMedium)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("member", "reseller").forEach { r ->
-                        FilterChip(
-                            selected = role == r,
-                            onClick = { role = r },
-                            label = { Text(r.uppercase()) }
-                        )
-                    }
-                }
-                
-                if (user.role == "admin") {
-                    Text(
-                        text = "Role Admin tidak dapat diubah di sini.",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-                
+                Text("Tambah saldo untuk ${user.uid}")
                 OutlinedTextField(
-                    value = daysToAdd,
-                    onValueChange = { if (it.all { char -> char.isDigit() }) daysToAdd = it },
-                    label = { Text("Tambah Masa Aktif (Hari)") },
+                    value = amountText,
+                    onValueChange = { if (it.all { char -> char.isDigit() }) amountText = it },
+                    label = { Text("Jumlah Saldo (Rp)") },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                         keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
                     )
                 )
-
-                if (isTargetReseller) {
-                    if (isAdmin) {
-                        OutlinedTextField(
-                            value = balanceToAdd,
-                            onValueChange = { if (it.all { char -> char.isDigit() }) balanceToAdd = it },
-                            label = { Text("Tambah Saldo Reseller (Credits)") },
-                            supportingText = { Text("Hanya Admin yang dapat menambah saldo reseller") },
-                            modifier = Modifier.fillMaxWidth(),
-                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                                keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
-                            )
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf(50000L, 100000L, 500000L, 1000000L).forEach { amount ->
+                        FilterChip(
+                            selected = amountText == amount.toString(),
+                            onClick = { amountText = amount.toString() },
+                            label = { Text("${amount/1000}K") }
                         )
-                    } else {
-                        Surface(
-                            color = MaterialTheme.colorScheme.surfaceVariant,
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Info,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "Penambahan saldo reseller hanya dapat dilakukan oleh Admin.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
                     }
                 }
             }
         },
         confirmButton = {
-            Button(onClick = {
-                val updates = mutableMapOf<String, Any>()
-                if (user.role != "admin") {
-                    updates["role"] = role
+            Button(
+                onClick = { 
+                    val amount = amountText.toLongOrNull() ?: 0L
+                    if (amount > 0) onConfirm(amount)
                 }
-                val days = daysToAdd.toLongOrNull() ?: 0L
-                if (days > 0) {
-                    val currentExpiry = if (user.expiredAt > System.currentTimeMillis()) user.expiredAt else System.currentTimeMillis()
-                    val newExpiry = currentExpiry + (days * 24 * 60 * 60 * 1000)
-                    updates["expiredAt"] = newExpiry
-                }
-                if (isAdmin) {
-                    val balanceAdd = balanceToAdd.toLongOrNull() ?: 0L
-                    if (balanceAdd > 0) {
-                        updates["balance"] = com.google.firebase.firestore.FieldValue.increment(balanceAdd)
-                    }
-                }
-                onConfirm(updates)
-            }) {
-                Text("Simpan")
+            ) {
+                Text("Top Up")
             }
         },
         dismissButton = {

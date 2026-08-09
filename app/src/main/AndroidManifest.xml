@@ -15,6 +15,7 @@
 
     <queries>
         <package android:name="com.google.android.gms" />
+        <package android:name="com.android.vending" />
     </queries>
 
     <application

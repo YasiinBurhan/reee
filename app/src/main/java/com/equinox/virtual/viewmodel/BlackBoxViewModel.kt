@@ -60,7 +60,6 @@ class BlackBoxViewModel(application: Application) : AndroidViewModel(application
     val firestoreUsers: StateFlow<List<FirestoreUser>> = authUserManager.firestoreUsers
     val currentUserBalance: StateFlow<Long> = authUserManager.currentUserBalance
 
-    val licenseKeys: StateFlow<List<LicenseKey>> = licenseStatsManager.licenseKeys
     val systemStats: StateFlow<Map<String, Int>> = licenseStatsManager.systemStats
 
     private val _isLoading = MutableStateFlow(false)
@@ -398,56 +397,8 @@ class BlackBoxViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun fetchLicenseKeys() {
-        fetchCurrentUserBalance()
-        viewModelScope.launch {
-            _isLoading.value = true
-            licenseStatsManager.fetchLicenseKeys(userRole.value) {
-                _isLoading.value = false
-            }
-        }
-    }
-
-    fun generateLicenseKey(durationDays: Int, role: String) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            licenseStatsManager.generateLicenseKey(
-                userRole = userRole.value,
-                durationDays = durationDays,
-                role = role,
-                onSuccess = { key ->
-                    _isLoading.value = false
-                    fetchLicenseKeys()
-                    viewModelScope.launch { _snackbarMessage.emit("Berhasil membuat lisensi: $key") }
-                },
-                onFailure = { errorMsg ->
-                    _isLoading.value = false
-                    viewModelScope.launch { _snackbarMessage.emit(errorMsg) }
-                }
-            )
-        }
-    }
-
     fun fetchCurrentUserBalance() {
         authUserManager.fetchCurrentUserBalance()
-    }
-
-    fun deleteLicenseKey(key: String) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            licenseStatsManager.deleteLicenseKey(
-                key = key,
-                onSuccess = {
-                    _isLoading.value = false
-                    fetchLicenseKeys()
-                    viewModelScope.launch { _snackbarMessage.emit("Berhasil menghapus lisensi") }
-                },
-                onFailure = { errorMsg ->
-                    _isLoading.value = false
-                    viewModelScope.launch { _snackbarMessage.emit(errorMsg) }
-                }
-            )
-        }
     }
 
     fun fetchFirestoreUsers() {

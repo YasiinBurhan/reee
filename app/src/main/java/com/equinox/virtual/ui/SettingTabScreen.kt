@@ -13,83 +13,11 @@ import com.equinox.virtual.viewmodel.BlackBoxViewModel
 @Composable
 fun SettingTabScreen(
     userRole: String? = null,
-    viewModel: BlackBoxViewModel
+    viewModel: BlackBoxViewModel,
+    onNavigateToUserManagement: () -> Unit,
+    onNavigateToAllowedPackages: () -> Unit,
+    onNavigateToSystemStats: () -> Unit
 ) {
-    var showUserManagement by remember { mutableStateOf(false) }
-    var showLicenseManagement by remember { mutableStateOf(false) }
-    var showSystemStats by remember { mutableStateOf(false) }
-    var showAllowedPackages by remember { mutableStateOf(false) }
-
-    if (showAllowedPackages) {
-        val packages by viewModel.allowedPackageList.collectAsState()
-        val isLoading by viewModel.isLoading.collectAsState()
-
-        AllowedPackagesManagementScreen(
-            packages = packages,
-            isLoading = isLoading,
-            onBack = { showAllowedPackages = false },
-            onAddPackage = { pkg, name -> viewModel.addAllowedPackage(pkg, name) },
-            onDeletePackage = { pkg -> viewModel.deleteAllowedPackage(pkg) }
-        )
-        return
-    }
-
-    if (showUserManagement) {
-        val users by viewModel.firestoreUsers.collectAsState()
-        val isLoading by viewModel.isLoading.collectAsState()
-
-        LaunchedEffect(Unit) {
-            viewModel.fetchFirestoreUsers()
-        }
-
-        UserManagementScreen(
-            users = users,
-            isLoading = isLoading,
-            currentUserRole = userRole,
-            onBack = { showUserManagement = false },
-            onUpdateUser = { uid, updates -> viewModel.updateFirestoreUser(uid, updates) },
-            onDeleteUser = { uid -> viewModel.deleteFirestoreUser(uid) }
-        )
-        return
-    }
-
-    if (showLicenseManagement) {
-        val licenses by viewModel.licenseKeys.collectAsState()
-        val isLoading by viewModel.isLoading.collectAsState()
-        val userBalance by viewModel.currentUserBalance.collectAsState()
-
-        LaunchedEffect(Unit) {
-            viewModel.fetchLicenseKeys()
-        }
-
-        LicenseManagementScreen(
-            licenses = licenses,
-            isLoading = isLoading,
-            userRole = userRole,
-            userBalance = userBalance,
-            onBack = { showLicenseManagement = false },
-            onGenerate = { days, role -> viewModel.generateLicenseKey(days, role) },
-            onDelete = { key -> viewModel.deleteLicenseKey(key) }
-        )
-        return
-    }
-
-    if (showSystemStats) {
-        val stats by viewModel.systemStats.collectAsState()
-        val isLoading by viewModel.isLoading.collectAsState()
-
-        LaunchedEffect(Unit) {
-            viewModel.fetchSystemStats()
-        }
-
-        SystemStatisticsScreen(
-            stats = stats,
-            isLoading = isLoading,
-            onBack = { showSystemStats = false }
-        )
-        return
-    }
-
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -123,31 +51,25 @@ fun SettingTabScreen(
                     icon = Icons.Default.People,
                     title = if (isAdmin) "Kelola Pengguna" else "Kelola Client",
                     subtitle = if (isAdmin) "Manajemen akun dan hak akses" else "Lihat dan kelola daftar pengguna",
-                    onClick = { showUserManagement = true }
+                    onClick = onNavigateToUserManagement
                 )
             }
-            item {
-                ProfileMenuItem(
-                    icon = Icons.Default.VpnKey,
-                    title = "Kelola & Generate Lisensi",
-                    subtitle = "Buat dan atur kode aktivasi lisensi",
-                    onClick = { showLicenseManagement = true }
-                )
-            }
-            item {
-                ProfileMenuItem(
-                    icon = Icons.Default.Apps,
-                    title = "APK Bisa Dikloning (Whitelist)",
-                    subtitle = "Kelola daftar package APK yang diizinkan untuk dikloning",
-                    onClick = { showAllowedPackages = true }
-                )
+            if (isAdmin) {
+                item {
+                    ProfileMenuItem(
+                        icon = Icons.Default.Apps,
+                        title = "APK Bisa Dikloning (Whitelist)",
+                        subtitle = "Kelola daftar package APK yang diizinkan untuk dikloning",
+                        onClick = onNavigateToAllowedPackages
+                    )
+                }
             }
             item {
                 ProfileMenuItem(
                     icon = Icons.Default.BarChart,
                     title = "Statistik Sistem",
                     subtitle = "Analitik pertumbuhan dan lisensi",
-                    onClick = { showSystemStats = true }
+                    onClick = onNavigateToSystemStats
                 )
             }
         }
