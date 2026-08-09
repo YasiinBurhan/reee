@@ -98,16 +98,36 @@ public class GmsProxy extends BinderInvocationStub {
         private static void fixGmsFields(Object obj, String hostPkg) {
             if (obj == null) return;
             String virtualPkg = BlackBoxCore.getAppPackageName();
+            if (obj instanceof android.os.Bundle) {
+                try {
+                    android.os.Bundle bundle = (android.os.Bundle) obj;
+                    for (String key : bundle.keySet()) {
+                        Object val = bundle.get(key);
+                        if (val instanceof String) {
+                            String strVal = (String) val;
+                            if ("com.google.android.gms".equals(strVal) || (virtualPkg != null && virtualPkg.equals(strVal))) {
+                                bundle.putString(key, hostPkg);
+                            }
+                        }
+                    }
+                } catch (Throwable ignored) {}
+                return;
+            }
             Class<?> clazz = obj.getClass();
             while (clazz != null && !clazz.getName().startsWith("java.lang.")) {
                 for (java.lang.reflect.Field field : clazz.getDeclaredFields()) {
                     try {
+                        field.setAccessible(true);
                         if (field.getType() == String.class) {
-                            field.setAccessible(true);
                             String val = (String) field.get(obj);
                             if ("com.google.android.gms".equals(val) || (virtualPkg != null && virtualPkg.equals(val))) {
                                 field.set(obj, hostPkg);
                                 Slog.d(TAG, "GmsProxy: Fixed field " + field.getName() + " in " + clazz.getSimpleName() + " to " + hostPkg);
+                            }
+                        } else if (android.os.Bundle.class.isAssignableFrom(field.getType())) {
+                            Object bundleVal = field.get(obj);
+                            if (bundleVal != null) {
+                                fixGmsFields(bundleVal, hostPkg);
                             }
                         }
                     } catch (Throwable ignored) {}
