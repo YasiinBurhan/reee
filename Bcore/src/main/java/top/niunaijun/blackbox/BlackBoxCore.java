@@ -858,7 +858,7 @@ public class BlackBoxCore extends ClientConfiguration {
         initNotificationManager();
 
         String processName = getProcessName(getContext());
-        if (processName.equals(BlackBoxCore.getHostPkg())) {
+        if (processName.equals(BlackBoxCore.getHostPkg()) || !processName.contains(":")) {
             mProcessType = ProcessType.Main;
             startLogcat();
         } else if (processName.endsWith(getContext().getString(R.string.black_box_service_name))) {

@@ -103,7 +103,7 @@ object AntiTamper {
                     var line: String?
                     while (reader.readLine().also { line = it } != null) {
                         val lowerLine = line!!.lowercase(Locale.ROOT)
-                        if (lowerLine.contains("shadowhook")) {
+                        if (lowerLine.contains("shadowhook") || lowerLine.contains("bytehook")) {
                             continue
                         }
                         if (lowerLine.contains("frida") || 

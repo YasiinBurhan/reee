@@ -183,7 +183,7 @@ class BlackBoxApp : Application() {
                     null
                 } ?: packageName
             }
-            currentProcess == packageName
+            !currentProcess.contains(":")
         } catch (e: Exception) {
             true
         }
