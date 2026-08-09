@@ -21,6 +21,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -31,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.equinox.virtual.model.VirtualAppInfo
@@ -41,6 +43,10 @@ fun LaunchModeDialog(
     onDismissRequest: () -> Unit,
     onConfirmLaunch: (isModMode: Boolean) -> Unit
 ) {
+    val context = LocalContext.current
+    val sp = remember { context.getSharedPreferences("equinox_settings", android.content.Context.MODE_PRIVATE) }
+    var directStorage by remember { mutableStateOf(sp.getBoolean("direct_storage_${app.packageName}", false)) }
+
     AlertDialog(
         onDismissRequest = onDismissRequest,
         shape = RoundedCornerShape(20.dp),
@@ -71,14 +77,52 @@ fun LaunchModeDialog(
             }
         },
         text = {
-            Text(
-                text = "Apakah Anda ingin menjalankan aplikasi ini?",
-                style = MaterialTheme.typography.bodyMedium
-            )
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "Apakah Anda ingin menjalankan aplikasi ini?",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                
+                Surface(
+                    onClick = { directStorage = !directStorage },
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Akses Penyimpanan Langsung",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Membaca/menulis langsung ke /sdcard/Android/data/${app.packageName}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = directStorage,
+                            onCheckedChange = { directStorage = it }
+                        )
+                    }
+                }
+            }
         },
         confirmButton = {
             TextButton(
                 onClick = {
+                    sp.edit().putBoolean("direct_storage_${app.packageName}", directStorage).apply()
                     onConfirmLaunch(false)
                 }
             ) {

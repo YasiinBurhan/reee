@@ -69,6 +69,15 @@ import com.equinox.virtual.model.VirtualAppInfo
 import com.equinox.virtual.viewmodel.BlackBoxViewModel
 import kotlinx.coroutines.flow.collectLatest
 
+import androidx.compose.material3.LargeTopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.systemBars
+
+import com.equinox.virtual.ui.theme.*
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BlackBoxMainScreen(
@@ -96,14 +105,13 @@ fun BlackBoxMainScreen(
 
     val context = LocalContext.current
     var pendingLaunchApp by remember { mutableStateOf<VirtualAppInfo?>(null) }
-    var selectedTab by remember { mutableIntStateOf(0) } // 0: Virtual Apps, 1: Host Apps (Inside Virtual Space Tab)
-    var selectedBottomNavIndex by remember { mutableIntStateOf(2) } // Default to Virtual Space (index 2)
+    var selectedTab by remember { mutableIntStateOf(0) } 
+    var selectedBottomNavIndex by remember { mutableIntStateOf(2) }
 
     val snackbarHostState = remember { SnackbarHostState() }
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     LaunchedEffect(Unit) {
-        if (!Settings.canDrawOverlays(context)) {
-        }
         viewModel.snackbarMessage.collectLatest { msg ->
             snackbarHostState.showSnackbar(msg)
         }
@@ -115,107 +123,48 @@ fun BlackBoxMainScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    val context = LocalContext.current
-                    Column(verticalArrangement = Arrangement.Center) {
-                        Text(
-                            text = when (selectedBottomNavIndex) {
-                                0 -> "Beranda"
-                                1 -> "Pengelola Unduhan"
-                                2 -> "Virtual"
-                                3 -> "Profil"
-                                4 -> "Pengaturan"
-                                else -> "EQuinox Virtual"
-                            },
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                        )
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            modifier = Modifier.padding(top = 2.dp)
-                        ) {
-                            userRole?.let { role ->
-                                val r = role.lowercase()
-                                if (r == "admin" || r == "reseller") {
-                                    Surface(
-                                        shape = RoundedCornerShape(4.dp),
-                                        color = if (r == "admin") MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.secondaryContainer,
-                                    ) {
-                                        Text(
-                                            text = role.uppercase(),
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = if (r == "admin") MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSecondaryContainer,
-                                            fontWeight = FontWeight.Bold,
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
-                                        )
-                                    }
-                                }
-                            }
-                            Surface(
-                                shape = RoundedCornerShape(4.dp),
-                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
-                                modifier = Modifier
-                                    .clickable {
-                                        if (currentUserId == 0) {
-                                            val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                                            val clip = android.content.ClipData.newPlainText("UID", com.equinox.virtual.EQuinoxApp.getDeviceHwid())
-                                            clipboard.setPrimaryClip(clip)
-                                            android.widget.Toast.makeText(context, "UID berhasil disalin!", android.widget.Toast.LENGTH_SHORT).show()
-                                        }
-                                    }
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
-                                ) {
-                                    Text(
-                                        text = if (currentUserId == 0) "UID: ${com.equinox.virtual.EQuinoxApp.getDeviceHwid()}" else "Ruang $currentUserId",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1,
-                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                    )
-                                    if (currentUserId == 0) {
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Icon(
-                                            imageVector = Icons.Filled.ContentCopy,
-                                            contentDescription = "Salin UID",
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                            modifier = Modifier.size(10.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    Text(
+                        text = when (selectedBottomNavIndex) {
+                            0 -> "Beranda"
+                            1 -> "Unduh"
+                            2 -> "Virtual"
+                            3 -> "Profil"
+                            4 -> "Pengaturan"
+                            else -> "EQuinox"
+                        },
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
                 },
                 actions = {
                     IconButton(
-                        onClick = { viewModel.toggleTheme(isDarkTheme) },
-                        modifier = Modifier.testTag("btn_toggle_theme")
+                        onClick = { viewModel.toggleTheme(isDarkTheme) }
                     ) {
                         Icon(
                             imageVector = if (isDarkTheme) Icons.Filled.LightMode else Icons.Filled.DarkMode,
-                            contentDescription = if (isDarkTheme) "Aktifkan Mode Terang" else "Aktifkan Mode Gelap"
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
+                )
             )
         },
         bottomBar = {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 20.dp)
                     .navigationBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
                 Surface(
-                    shape = RoundedCornerShape(24.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    shadowElevation = 8.dp,
-                    tonalElevation = 8.dp,
+                    shape = RoundedCornerShape(32.dp),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                    shadowElevation = 12.dp,
+                    tonalElevation = 12.dp,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     NavigationBar(
@@ -223,67 +172,42 @@ fun BlackBoxMainScreen(
                         tonalElevation = 0.dp,
                         modifier = Modifier.height(72.dp)
                     ) {
-                        NavigationBarItem(
-                            selected = selectedBottomNavIndex == 0,
-                            onClick = { selectedBottomNavIndex = 0 },
-                            icon = { Icon(Icons.Default.Home, contentDescription = "Beranda") },
-                            label = { Text("Beranda") },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = MaterialTheme.colorScheme.primary,
-                                selectedTextColor = MaterialTheme.colorScheme.primary,
-                                indicatorColor = MaterialTheme.colorScheme.primaryContainer
-                            ),
-                            modifier = Modifier.testTag("nav_dashboard")
+                        val navItems = listOf(
+                            Triple(0, Icons.Default.Home, "Beranda"),
+                            Triple(1, Icons.Default.Download, "Unduh"),
+                            Triple(2, Icons.Default.Layers, "Virtual"),
+                            Triple(3, Icons.Default.Person, "Profil")
                         )
 
-                        NavigationBarItem(
-                            selected = selectedBottomNavIndex == 1,
-                            onClick = { selectedBottomNavIndex = 1 },
-                            icon = { Icon(Icons.Default.Download, contentDescription = "Unduh") },
-                            label = { Text("Unduh") },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = MaterialTheme.colorScheme.primary,
-                                selectedTextColor = MaterialTheme.colorScheme.primary,
-                                indicatorColor = MaterialTheme.colorScheme.primaryContainer
-                            ),
-                            modifier = Modifier.testTag("nav_download")
-                        )
-
-                        NavigationBarItem(
-                            selected = selectedBottomNavIndex == 2,
-                            onClick = { selectedBottomNavIndex = 2 },
-                            icon = {
-                                BadgedBox(
-                                    badge = {
-                                        if (virtualApps.isNotEmpty()) {
-                                            Badge { Text("${virtualApps.size}") }
+                        navItems.forEach { (index, icon, label) ->
+                            NavigationBarItem(
+                                selected = selectedBottomNavIndex == index,
+                                onClick = { selectedBottomNavIndex = index },
+                                icon = {
+                                    if (index == 2) {
+                                        BadgedBox(
+                                            badge = {
+                                                if (virtualApps.isNotEmpty()) {
+                                                    Badge(containerColor = iOSRed) { Text("${virtualApps.size}") }
+                                                }
+                                            }
+                                        ) {
+                                            Icon(icon, contentDescription = label)
                                         }
+                                    } else {
+                                        Icon(icon, contentDescription = label)
                                     }
-                                ) {
-                                    Icon(Icons.Default.Layers, contentDescription = "Virtual")
-                                }
-                            },
-                            label = { Text("Virtual") },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = MaterialTheme.colorScheme.primary,
-                                selectedTextColor = MaterialTheme.colorScheme.primary,
-                                indicatorColor = MaterialTheme.colorScheme.primaryContainer
-                            ),
-                            modifier = Modifier.testTag("nav_sandbox")
-                        )
-
-                        NavigationBarItem(
-                            selected = selectedBottomNavIndex == 3,
-                            onClick = { selectedBottomNavIndex = 3 },
-                            icon = { Icon(Icons.Default.Person, contentDescription = "Profil") },
-                            label = { Text("Profil") },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = MaterialTheme.colorScheme.primary,
-                                selectedTextColor = MaterialTheme.colorScheme.primary,
-                                indicatorColor = MaterialTheme.colorScheme.primaryContainer
-                            ),
-                            modifier = Modifier.testTag("nav_profil")
-                        )
+                                },
+                                label = { Text(label, style = MaterialTheme.typography.labelMedium) },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    indicatorColor = Color.Transparent,
+                                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            )
+                        }
 
                         val isPrivilegedUser = userRole?.lowercase() == "admin" || userRole?.lowercase() == "reseller"
                         if (isPrivilegedUser) {
@@ -291,13 +215,14 @@ fun BlackBoxMainScreen(
                                 selected = selectedBottomNavIndex == 4,
                                 onClick = { selectedBottomNavIndex = 4 },
                                 icon = { Icon(Icons.Default.Settings, contentDescription = "Setting") },
-                                label = { Text("Setting") },
+                                label = { Text("Setting", style = MaterialTheme.typography.labelMedium) },
                                 colors = NavigationBarItemDefaults.colors(
                                     selectedIconColor = MaterialTheme.colorScheme.primary,
+                                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    indicatorColor = Color.Transparent,
                                     selectedTextColor = MaterialTheme.colorScheme.primary,
-                                    indicatorColor = MaterialTheme.colorScheme.primaryContainer
-                                ),
-                                modifier = Modifier.testTag("nav_setting")
+                                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             )
                         }
                     }
@@ -311,11 +236,13 @@ fun BlackBoxMainScreen(
                 .padding(paddingValues)
         ) {
             // Engine Initialization Progress Banner
-            BcoreEngineStatusBanner(
-                engineInitialized = engineInitialized,
-                engineProgress = engineProgress,
-                engineStatusText = engineStatusText
-            )
+            if (!engineInitialized || engineProgress < 1.0f) {
+                BcoreEngineStatusBanner(
+                    engineInitialized = engineInitialized,
+                    engineProgress = engineProgress,
+                    engineStatusText = engineStatusText
+                )
+            }
 
             AnimatedContent(
                 targetState = selectedBottomNavIndex,

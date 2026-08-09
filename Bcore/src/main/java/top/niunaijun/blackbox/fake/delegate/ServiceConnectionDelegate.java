@@ -58,7 +58,8 @@ public class ServiceConnectionDelegate extends IServiceConnection.Stub {
             try {
                 String desc = service.getInterfaceDescriptor();
                 if ("com.google.android.gms.common.internal.IGmsServiceBroker".equals(desc) ||
-                    "com.google.android.gms.common.api.internal.IGmsServiceBroker".equals(desc)) {
+                    "com.google.android.gms.common.api.internal.IGmsServiceBroker".equals(desc) ||
+                    (name != null && "com.google.android.gms".equals(name.getPackageName()))) {
                     service = top.niunaijun.blackbox.fake.service.GmsProxy.createProxy(service);
                 }
             } catch (Throwable ignored) {}

@@ -120,6 +120,17 @@ public class IOCore {
             rule.put(String.format("/data/user/%d/%s", systemUserId, packageName), packageInfo.dataDir);
 
             
+            android.content.SharedPreferences sp = BlackBoxCore.getContext().getSharedPreferences("equinox_settings", Context.MODE_PRIVATE);
+            boolean directStorage = sp.getBoolean("direct_storage_" + packageName, false);
+            if (directStorage) {
+                rule.put(String.format("/sdcard/Android/data/%s", packageName), String.format("/sdcard/Android/data/%s", packageName));
+                rule.put(String.format("/sdcard/Android/obb/%s", packageName), String.format("/sdcard/Android/obb/%s", packageName));
+                rule.put(String.format("/storage/emulated/%d/Android/data/%s", systemUserId, packageName), String.format("/storage/emulated/%d/Android/data/%s", systemUserId, packageName));
+                rule.put(String.format("/storage/emulated/%d/Android/obb/%s", systemUserId, packageName), String.format("/storage/emulated/%d/Android/obb/%s", systemUserId, packageName));
+                top.niunaijun.blackbox.utils.Slog.d(TAG, "Direct Storage Access enabled for: " + packageName);
+            }
+
+            
             File profilesRoot = new File(BEnvironment.getVirtualRoot(), "profiles");
             FileUtils.mkdirs(profilesRoot.getAbsolutePath());
             

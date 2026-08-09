@@ -15,32 +15,42 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-private val DarkColorScheme =
-  darkColorScheme(primary = Purple80, secondary = PurpleGrey80, tertiary = Pink80)
+private val DarkColorScheme = darkColorScheme(
+    primary = iOSBlue,
+    onPrimary = androidx.compose.ui.graphics.Color.White,
+    primaryContainer = iOSIndigo,
+    onPrimaryContainer = androidx.compose.ui.graphics.Color.White,
+    secondary = iOSPink,
+    tertiary = iOSPurple,
+    background = iOSDarkBackground,
+    surface = iOSDarkSurface,
+    onBackground = androidx.compose.ui.graphics.Color.White,
+    onSurface = androidx.compose.ui.graphics.Color.White,
+    surfaceVariant = androidx.compose.ui.graphics.Color(0xFF2C2C2E),
+    onSurfaceVariant = iOSSystemGray4
+)
 
-private val LightColorScheme =
-  lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40,
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
-  )
+private val LightColorScheme = lightColorScheme(
+    primary = iOSBlue,
+    onPrimary = androidx.compose.ui.graphics.Color.White,
+    primaryContainer = iOSTeal.copy(alpha = 0.1f),
+    onPrimaryContainer = iOSBlue,
+    secondary = iOSPink,
+    tertiary = iOSPurple,
+    background = iOSBackground,
+    surface = iOSSurface,
+    onBackground = androidx.compose.ui.graphics.Color.Black,
+    onSurface = androidx.compose.ui.graphics.Color.Black,
+    surfaceVariant = iOSSystemGray6,
+    onSurfaceVariant = iOSSystemGray
+)
 
 @Composable
 fun MyApplicationTheme(
-  darkTheme: Boolean = isSystemInDarkTheme(),
-  // Dynamic color is available on Android 12+
-  dynamicColor: Boolean = true,
-  content: @Composable () -> Unit,
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    // Disable dynamic color to maintain iOS aesthetic
+    dynamicColor: Boolean = false,
+    content: @Composable () -> Unit,
 ) {
   val colorScheme =
     when {

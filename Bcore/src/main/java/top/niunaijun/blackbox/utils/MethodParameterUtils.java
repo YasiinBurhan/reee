@@ -19,6 +19,16 @@ public class MethodParameterUtils {
         return null;
     }
 
+    private static boolean isAppOrGms(String pkg) {
+        if (pkg == null) {
+            return false;
+        }
+        return BlackBoxCore.get().isInstalled(pkg, BlackBoxCore.getUserId())
+                || "com.google.android.gms".equals(pkg)
+                || "com.google.android.gsf".equals(pkg)
+                || "com.android.vending".equals(pkg);
+    }
+
     public static String replaceFirstAppPkg(Object[] args) {
         if (args == null) {
             return null;
@@ -26,7 +36,7 @@ public class MethodParameterUtils {
         for (int i = 0; i < args.length; i++) {
             if (args[i] instanceof String) {
                 String value = (String) args[i];
-                if (BlackBoxCore.get().isInstalled(value, BlackBoxCore.getUserId())) {
+                if (isAppOrGms(value)) {
                     args[i] = BlackBoxCore.getHostPkg();
                     return value;
                 }
@@ -44,7 +54,7 @@ public class MethodParameterUtils {
                 continue;
             if (args[i] instanceof String) {
                 String value = (String) args[i];
-                if (BlackBoxCore.get().isInstalled(value, BlackBoxCore.getUserId())) {
+                if (isAppOrGms(value)) {
                     args[i] = BlackBoxCore.getHostPkg();
                 }
             }
@@ -78,7 +88,7 @@ public class MethodParameterUtils {
         int index = ArrayUtils.indexOfLast(args, String.class);
         if (index != -1) {
             String pkg = (String) args[index];
-            if (BlackBoxCore.get().isInstalled(pkg, BlackBoxCore.getUserId())) {
+            if (isAppOrGms(pkg)) {
                 args[index] = BlackBoxCore.getHostPkg();
             }
             return pkg;
@@ -90,7 +100,7 @@ public class MethodParameterUtils {
         int index = ArrayUtils.indexOf(args, String.class, sequence);
         if (index != -1) {
             String pkg = (String) args[index];
-            if (BlackBoxCore.get().isInstalled(pkg, BlackBoxCore.getUserId())) {
+            if (isAppOrGms(pkg)) {
                 args[index] = BlackBoxCore.getHostPkg();
             }
             return pkg;

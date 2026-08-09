@@ -44,10 +44,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.equinox.virtual.model.VirtualAppInfo
+import com.equinox.virtual.ui.theme.*
 
 @Composable
 fun DashboardTabScreen(
@@ -59,7 +61,7 @@ fun DashboardTabScreen(
     onLaunchApp: (VirtualAppInfo) -> Unit
 ) {
     LazyColumn(
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(top = 8.dp, start = 16.dp, end = 16.dp, bottom = 80.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier.fillMaxSize()
     ) {
@@ -67,12 +69,12 @@ fun DashboardTabScreen(
         item {
             Card(
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                    containerColor = iOSBlue
                 ),
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(28.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(modifier = Modifier.padding(20.dp)) {
+                Column(modifier = Modifier.padding(24.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -80,28 +82,28 @@ fun DashboardTabScreen(
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Surface(
-                                shape = CircleShape,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(40.dp)
+                                shape = RoundedCornerShape(14.dp),
+                                color = Color.White.copy(alpha = 0.2f),
+                                modifier = Modifier.size(48.dp)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
                                         imageVector = Icons.Default.Shield,
                                         contentDescription = "Security",
-                                        tint = MaterialTheme.colorScheme.onPrimary,
-                                        modifier = Modifier.size(24.dp)
+                                        tint = Color.White,
+                                        modifier = Modifier.size(28.dp)
                                     )
                                 }
                             }
-                            Spacer(modifier = Modifier.width(12.dp))
+                            Spacer(modifier = Modifier.width(16.dp))
                             Column {
                                 Text(
-                                    text = "Lingkungan Virtual Aktif",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    text = "EQuinox Sandbox",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color.White
                                 )
-                                val mContext = androidx.compose.ui.platform.LocalContext.current
+                                val mContext = LocalContext.current
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier
@@ -110,15 +112,15 @@ fun DashboardTabScreen(
                                                 val clipboard = mContext.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                                                 val clip = android.content.ClipData.newPlainText("UID", com.equinox.virtual.EQuinoxApp.getDeviceHwid())
                                                 clipboard.setPrimaryClip(clip)
-                                                android.widget.Toast.makeText(mContext, "UID berhasil disalin!", android.widget.Toast.LENGTH_SHORT).show()
+                                                android.widget.Toast.makeText(mContext, "UID disalin!", android.widget.Toast.LENGTH_SHORT).show()
                                             }
                                         }
                                         .padding(vertical = 2.dp)
                                 ) {
                                     Text(
-                                        text = if (currentUserId == 0) "UID: ${com.equinox.virtual.EQuinoxApp.getDeviceHwid()}" else "Sandbox Anti-Deteksi • Ruang $currentUserId",
+                                        text = if (currentUserId == 0) "ID: ${com.equinox.virtual.EQuinoxApp.getDeviceHwid()}" else "Ruang Virtual • $currentUserId",
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                                        color = Color.White.copy(alpha = 0.8f),
                                         maxLines = 1,
                                         overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                                         modifier = Modifier.weight(1f, fill = false)
@@ -128,7 +130,7 @@ fun DashboardTabScreen(
                                         Icon(
                                             imageVector = Icons.Filled.ContentCopy,
                                             contentDescription = "Salin UID",
-                                            tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                                            tint = Color.White.copy(alpha = 0.7f),
                                             modifier = Modifier.size(12.dp)
                                         )
                                     }
@@ -137,7 +139,7 @@ fun DashboardTabScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -146,53 +148,56 @@ fun DashboardTabScreen(
                         Button(
                             onClick = onNavigateToVirtualSpace,
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
+                                containerColor = Color.White,
+                                contentColor = iOSBlue
                             ),
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(16.dp),
                             modifier = Modifier.weight(1f)
                         ) {
-                            Icon(Icons.Default.Layers, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Buka Aplikasi")
+                            Text("Buka App", fontWeight = FontWeight.Bold)
                         }
 
-                        OutlinedButton(
+                        Button(
                             onClick = onNavigateToDownload,
-                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.White.copy(alpha = 0.2f),
+                                contentColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(16.dp),
                             modifier = Modifier.weight(1f)
                         ) {
-                            Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Pasang APK")
+                            Text("Pasang APK", fontWeight = FontWeight.Bold)
                         }
                     }
                 }
             }
         }
 
-        // Quick Stats Grid 2x2
+        // Quick Stats Grid
         item {
             Text(
-                text = "Ikhtisar Mesin",
-                style = MaterialTheme.typography.titleSmall,
+                text = "STATUS SISTEM",
+                style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
             )
-            Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 StatCard(
-                    title = "Aplikasi Kloning",
+                    title = "Kloning",
                     value = "${virtualApps.size}",
-                    icon = Icons.Default.Android,
+                    icon = Icons.Default.Layers,
+                    color = iOSIndigo,
                     modifier = Modifier.weight(1f)
                 )
                 StatCard(
-                    title = "Ruang Pengguna",
+                    title = "Pengguna",
                     value = "${userList.size}",
                     icon = Icons.Default.Person,
+                    color = iOSPink,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -221,12 +226,12 @@ fun DashboardTabScreen(
                     }
 
                     when {
-                        isVirtualGmsInstalled -> "GMS Virtual"
-                        gmsPackageInfo != null -> "Terdeteksi"
-                        else -> "Proksi"
+                        isVirtualGmsInstalled -> "Virtual"
+                        gmsPackageInfo != null -> "Host"
+                        else -> "None"
                     }
                 } catch (e: Exception) {
-                    "Proksi"
+                    "None"
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
@@ -236,20 +241,22 @@ fun DashboardTabScreen(
             ) {
                 StatCard(
                     title = "Arsitektur",
-                    value = detectedAbi,
+                    value = detectedAbi.uppercase(),
                     icon = Icons.Default.Storage,
+                    color = iOSOrange,
                     modifier = Modifier.weight(1f)
                 )
                 StatCard(
-                    title = "Layanan GMS",
+                    title = "GMS Status",
                     value = detectedGmsStatus,
-                    icon = Icons.Default.Speed,
+                    icon = Icons.Default.Shield,
+                    color = iOSGreen,
                     modifier = Modifier.weight(1f)
                 )
             }
         }
 
-        // Recently Installed Cloned Apps Section
+        // App List
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -257,89 +264,107 @@ fun DashboardTabScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Aplikasi Virtual (${virtualApps.size})",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
+                    text = "APLIKASI TERPASANG",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 4.dp)
                 )
                 TextButton(onClick = onNavigateToVirtualSpace) {
-                    Text("Lihat Semua")
+                    Text("Lihat Semua", color = iOSBlue, fontWeight = FontWeight.Bold)
                 }
             }
 
             if (virtualApps.isEmpty()) {
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer
-                    ),
-                    shape = RoundedCornerShape(16.dp),
+                Surface(
+                    shape = RoundedCornerShape(24.dp),
+                    color = MaterialTheme.colorScheme.surface,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(24.dp),
+                            .padding(40.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "Belum ada aplikasi yang dikloning di ruang ini.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = "Belum Ada Aplikasi",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Button(onClick = onNavigateToVirtualSpace) {
-                            Text("Kloning Aplikasi Pertama Anda")
-                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Aplikasi yang dikloning akan muncul di sini.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
                     }
                 }
             } else {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    virtualApps.take(4).forEach { app ->
-                        Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainer
-                            ),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onLaunchApp(app) }
-                        ) {
+                Surface(
+                    shape = RoundedCornerShape(24.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column {
+                        virtualApps.take(5).forEachIndexed { index, app ->
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(12.dp),
+                                    .clickable { onLaunchApp(app) }
+                                    .padding(horizontal = 16.dp, vertical = 14.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                                     DrawableImage(
                                         drawable = app.icon,
                                         contentDescription = app.name,
                                         modifier = Modifier
-                                            .size(40.dp)
-                                            .clip(RoundedCornerShape(8.dp))
+                                            .size(56.dp)
+                                            .clip(RoundedCornerShape(14.dp))
                                     )
-                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Spacer(modifier = Modifier.width(16.dp))
                                     Column {
                                         Text(
                                             text = app.name,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.SemiBold
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                            color = MaterialTheme.colorScheme.onSurface
                                         )
                                         Text(
                                             text = app.packageName,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 1,
+                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                         )
                                     }
                                 }
 
                                 Button(
                                     onClick = { onLaunchApp(app) },
-                                    shape = RoundedCornerShape(8.dp),
-                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                        contentColor = iOSBlue
+                                    ),
+                                    shape = RoundedCornerShape(18.dp),
+                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                                    modifier = Modifier.height(34.dp)
                                 ) {
-                                    Text("Buka", fontSize = 12.sp)
+                                    Text("BUKA", fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
                                 }
+                            }
+                            if (index < virtualApps.take(5).size - 1) {
+                                androidx.compose.material3.HorizontalDivider(
+                                    modifier = Modifier.padding(start = 88.dp),
+                                    thickness = 0.5.dp,
+                                    color = MaterialTheme.colorScheme.outlineVariant
+                                )
                             }
                         }
                     }

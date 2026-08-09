@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.DeveloperMode
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -41,7 +42,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,6 +55,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -58,6 +63,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.equinox.virtual.model.VirtualAppInfo
+import com.equinox.virtual.ui.theme.*
 
 @Composable
 fun VirtualSpaceTabScreen(
@@ -77,23 +83,42 @@ fun VirtualSpaceTabScreen(
     onCloneHostApp: (String) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
-        // Screen Tabs: Virtual Apps / Host Apps Engine
-        TabRow(
-            selectedTabIndex = selectedTab,
-            containerColor = MaterialTheme.colorScheme.surface
+        // iOS style Segmented Control
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp, start = 16.dp, end = 16.dp, bottom = 12.dp),
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         ) {
-            Tab(
-                selected = selectedTab == 0,
-                onClick = { onSelectTab(0) },
-                text = { Text("Sandbox Virtual (${virtualApps.size})") },
-                icon = { Icon(Icons.Default.Android, contentDescription = "Aplikasi Virtual") }
-            )
-            Tab(
-                selected = selectedTab == 1,
-                onClick = { onSelectTab(1) },
-                text = { Text("Aplikasi Perangkat (${hostApps.size})") },
-                icon = { Icon(Icons.Default.DeveloperMode, contentDescription = "Aplikasi Perangkat") }
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(2.dp),
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                listOf("SANDBOX", "PERANGKAT").forEachIndexed { index, label ->
+                    val isSelected = selectedTab == index
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(32.dp)
+                            .clickable { onSelectTab(index) },
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (isSelected) MaterialTheme.colorScheme.surface else Color.Transparent,
+                        shadowElevation = if (isSelected) 2.dp else 0.dp
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Bold,
+                                color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
         }
 
         when (selectedTab) {
@@ -131,48 +156,48 @@ fun EmptyVirtualAppsView(onSelectHostAppsTab: () -> Unit) {
         verticalArrangement = Arrangement.Center
     ) {
         Surface(
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-            modifier = Modifier.size(96.dp)
+            shape = RoundedCornerShape(20.dp),
+            color = iOSBlue.copy(alpha = 0.1f),
+            modifier = Modifier.size(100.dp)
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = Icons.Default.Android,
-                    contentDescription = "Sandbox Kosong",
-                    tint = MaterialTheme.colorScheme.primary,
+                    contentDescription = null,
+                    tint = iOSBlue,
                     modifier = Modifier.size(48.dp)
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "Sandbox Virtual Kosong",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
+            text = "Sandbox Kosong",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.ExtraBold
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = "Belum ada aplikasi yang berjalan di lingkungan virtual untuk ruang pengguna ini.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 16.dp),
+            text = "Belum ada aplikasi yang dikloning ke dalam sandbox ini.",
+            style = MaterialTheme.typography.bodyLarge,
+            color = iOSSystemGray,
             textAlign = TextAlign.Center
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
         Button(
             onClick = onSelectHostAppsTab,
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.testTag("btn_empty_clone_cta")
+            colors = ButtonDefaults.buttonColors(containerColor = iOSBlue),
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.height(48.dp)
         ) {
-            Icon(Icons.Default.Add, contentDescription = "Pasang Aplikasi")
+            Icon(Icons.Default.Add, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Pasang Aplikasi dari Perangkat")
+            Text("Kloning Aplikasi", fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -199,20 +224,26 @@ fun VirtualAppsGrid(
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
-            placeholder = { Text("Cari aplikasi virtual...") },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Cari") },
-            shape = RoundedCornerShape(12.dp),
+            placeholder = { Text("Cari di Sandbox...") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+            shape = RoundedCornerShape(16.dp),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+            ),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
-                .testTag("input_search_virtual_apps")
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         )
 
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.fillMaxSize()
         ) {
             items(filteredApps, key = { it.packageName }) { app ->
@@ -240,45 +271,29 @@ fun VirtualAppCard(
 
     Card(
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(24.dp),
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onLaunch() }
-            .testTag("card_virtual_app_${app.packageName}")
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.End
             ) {
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                    modifier = Modifier.padding(2.dp)
-                ) {
-                    Text(
-                        text = "VIRTUAL",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
-                }
-
                 Box {
                     IconButton(
                         onClick = { menuExpanded = true },
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(24.dp)
                     ) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Menu", modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.MoreVert, contentDescription = null, tint = iOSSystemGray, modifier = Modifier.size(18.dp))
                     }
 
                     DropdownMenu(
@@ -286,7 +301,7 @@ fun VirtualAppCard(
                         onDismissRequest = { menuExpanded = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Hapus Data Aplikasi") },
+                            text = { Text("Hapus Data") },
                             leadingIcon = { Icon(Icons.Default.CleanHands, contentDescription = null) },
                             onClick = {
                                 menuExpanded = false
@@ -294,8 +309,8 @@ fun VirtualAppCard(
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Copot Pemasangan", color = MaterialTheme.colorScheme.error) },
-                            leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                            text = { Text("Hapus APK", color = iOSRed) },
+                            leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = iOSRed) },
                             onClick = {
                                 menuExpanded = false
                                 onUninstall()
@@ -305,22 +320,19 @@ fun VirtualAppCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // App Icon
             DrawableImage(
                 drawable = app.icon,
                 contentDescription = app.name,
                 modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .size(64.dp)
+                    .clip(RoundedCornerShape(14.dp))
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Text(
                 text = app.name,
-                style = MaterialTheme.typography.titleSmall,
+                style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -328,50 +340,22 @@ fun VirtualAppCard(
 
             Text(
                 text = app.packageName,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelSmall,
+                color = iOSSystemGray,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                fontSize = 10.sp
+                overflow = TextOverflow.Ellipsis
             )
 
-            val isWhitelisted = allowedPackages.contains(app.packageName)
-            val profileLabel = if (isWhitelisted) {
-                val shortName = app.name.split(" ").firstOrNull() ?: "App"
-                val cleanedName = if (shortName.length > 8) shortName.take(6) + ".." else shortName
-                "$cleanedName Profile"
-            } else {
-                null
-            }
-            if (profileLabel != null) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Surface(
-                    shape = RoundedCornerShape(4.dp),
-                    color = MaterialTheme.colorScheme.tertiaryContainer,
-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = profileLabel,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp),
-                        fontSize = 8.sp
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Button(
                 onClick = onLaunch,
-                shape = RoundedCornerShape(10.dp),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = iOSBlue),
+                shape = RoundedCornerShape(14.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Icon(Icons.AutoMirrored.Filled.Launch, contentDescription = "Buka", modifier = Modifier.size(14.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Buka", fontSize = 12.sp)
+                Text("BUKA", fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
             }
         }
     }
@@ -397,89 +381,65 @@ fun HostAppsList(
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
-            placeholder = { Text("Cari aplikasi terpasang...") },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Cari") },
-            shape = RoundedCornerShape(12.dp),
+            placeholder = { Text("Cari aplikasi di perangkat...") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = iOSSystemGray) },
+            shape = RoundedCornerShape(16.dp),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = iOSSystemGray6,
+                unfocusedContainerColor = iOSSystemGray6,
+                disabledContainerColor = iOSSystemGray6,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+            ),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
-                .testTag("input_search_host_apps")
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         )
 
-        LazyColumn(
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxSize()
+        Surface(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surface
         ) {
-            items(filteredApps, key = { it.packageName }) { app ->
-                val isRegistered = allowedPackages.contains(app.packageName)
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (isRegistered) {
-                            MaterialTheme.colorScheme.surfaceContainer
-                        } else {
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                        }
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .alpha(if (isRegistered) 1.0f else 0.6f)
-                ) {
+            LazyColumn(
+                contentPadding = PaddingValues(vertical = 8.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(filteredApps, key = { it.packageName }) { app ->
+                    val isWhitelisted = allowedPackages.contains(app.packageName)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(12.dp),
+                            .clickable(enabled = isWhitelisted) { onCloneApp(app.packageName) }
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                            .alpha(if (isWhitelisted) 1.0f else 0.5f),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.weight(1f)
-                        ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                             DrawableImage(
                                 drawable = app.icon,
                                 contentDescription = app.name,
                                 modifier = Modifier
-                                    .size(44.dp)
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .size(52.dp)
+                                    .clip(RoundedCornerShape(12.dp))
                             )
-                            Spacer(modifier = Modifier.width(12.dp))
+                            Spacer(modifier = Modifier.width(16.dp))
                             Column {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Start
-                                ) {
-                                    Text(
-                                        text = app.name,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = FontWeight.SemiBold,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.weight(1f, fill = false)
-                                    )
-                                    if (!isRegistered) {
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Surface(
-                                            shape = RoundedCornerShape(4.dp),
-                                            color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.8f),
-                                            modifier = Modifier.padding(2.dp)
-                                        ) {
-                                            Text(
-                                                text = "Belum Terdaftar",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onErrorContainer,
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 8.sp,
-                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
-                                            )
-                                        }
-                                    }
-                                }
                                 Text(
-                                    text = app.packageName,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    text = app.name,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = if (isWhitelisted) app.packageName else "BELUM TERDAFTAR",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (isWhitelisted) iOSSystemGray else iOSRed,
+                                    fontWeight = if (isWhitelisted) FontWeight.Normal else FontWeight.Bold,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
@@ -488,13 +448,17 @@ fun HostAppsList(
 
                         Button(
                             onClick = { onCloneApp(app.packageName) },
-                            enabled = isRegistered,
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            enabled = isWhitelisted,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = iOSSystemGray6,
+                                contentColor = iOSBlue,
+                                disabledContainerColor = iOSSystemGray6.copy(alpha = 0.5f)
+                            ),
+                            shape = RoundedCornerShape(16.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                            modifier = Modifier.height(32.dp)
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = "Kloning", modifier = Modifier.size(14.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Kloning", fontSize = 12.sp)
+                            Text("KLON", fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
                         }
                     }
                 }

@@ -192,40 +192,197 @@ class VirtualSpaceManager(private val application: Application) {
         BlackBoxCore.get().clearPackage(packageName, userId)
     }
 
-    fun installFromUri(uri: Uri, userId: Int): Pair<Boolean, String> {
-        val tempFile = File(context.cacheDir, "install_temp_${System.currentTimeMillis()}.apk")
-        context.contentResolver.openInputStream(uri)?.use { input ->
-            tempFile.outputStream().use { output ->
-                input.copyTo(output)
+    fun installFromFile(file: File, userId: Int): Pair<Boolean, String> {
+        var isXapk = false
+        try {
+            java.util.zip.ZipFile(file).use { zip ->
+                val entries = zip.entries()
+                while (entries.hasMoreElements()) {
+                    val entry = entries.nextElement()
+                    if (entry.name.endsWith(".apk", ignoreCase = true)) {
+                        isXapk = true
+                        break
+                    }
+                }
             }
+        } catch (e: Exception) {
+            isXapk = false
         }
-        if (!tempFile.exists() || tempFile.length() == 0L) {
-            return Pair(false, "Gagal membaca file APK dari penyimpanan.")
+
+        if (isXapk) {
+            val tempDir = File(context.cacheDir, "xapk_temp_${System.currentTimeMillis()}")
+            tempDir.mkdirs()
+            try {
+                // Extract all files from ZIP
+                java.util.zip.ZipFile(file).use { zip ->
+                    val entries = zip.entries()
+                    while (entries.hasMoreElements()) {
+                        val entry = entries.nextElement()
+                        if (!entry.isDirectory) {
+                            val name = entry.name.replace("/", "_")
+                            val outFile = File(tempDir, name)
+                            outFile.parentFile?.mkdirs()
+                            zip.getInputStream(entry).use { input ->
+                                outFile.outputStream().use { output ->
+                                    input.copyTo(output)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Find all APK files
+                val apkFiles = tempDir.listFiles { _, name -> name.endsWith(".apk", ignoreCase = true) } ?: emptyArray()
+                if (apkFiles.isEmpty()) {
+                    return Pair(false, "Tidak ditemukan file APK di dalam paket XAPK.")
+                }
+
+                // Identify base APK
+                var baseApkFile: File? = null
+                for (apk in apkFiles) {
+                    val packageInfo = packageManager.getPackageArchiveInfo(apk.absolutePath, 0)
+                    if (packageInfo != null) {
+                        baseApkFile = apk
+                        break
+                    }
+                }
+
+                if (baseApkFile == null) {
+                    baseApkFile = apkFiles.maxByOrNull { it.length() }
+                }
+
+                if (baseApkFile == null) {
+                    return Pair(false, "Gagal mengidentifikasi base APK di dalam paket XAPK.")
+                }
+
+                // Install base APK
+                val result = BlackBoxCore.get().installPackageAsUser(baseApkFile, userId)
+                if (!result.success) {
+                    return Pair(false, result.msg ?: "Gagal memasang base APK.")
+                }
+
+                val packageName = result.packageName ?: ""
+                if (packageName.isNotEmpty()) {
+                    // Extract native libs from ALL APKs
+                    val libDir = top.niunaijun.blackbox.core.env.BEnvironment.getAppLibDir(packageName)
+                    libDir.mkdirs()
+
+                    val abis = android.os.Build.SUPPORTED_ABIS
+                    var bestAbi: String? = null
+
+                    // Scan for available ABIs in any of the APKs
+                    for (apk in apkFiles) {
+                        try {
+                            java.util.zip.ZipFile(apk).use { zip ->
+                                val entries = zip.entries()
+                                while (entries.hasMoreElements()) {
+                                    val entry = entries.nextElement()
+                                    if (entry.name.startsWith("lib/")) {
+                                        val parts = entry.name.split("/")
+                                        if (parts.size > 2) {
+                                            val abi = parts[1]
+                                            if (abis.contains(abi)) {
+                                                if (bestAbi == null || abis.indexOf(abi) < abis.indexOf(bestAbi)) {
+                                                    bestAbi = abi
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Log.e("VirtualSpaceManager", "Failed to scan native libraries from ${apk.name}", e)
+                        }
+                    }
+
+                    if (bestAbi != null) {
+                        Log.d("VirtualSpaceManager", "XAPK: Chose best ABI '$bestAbi' for native library extraction")
+                        for (apk in apkFiles) {
+                            try {
+                                java.util.zip.ZipFile(apk).use { zip ->
+                                    val entries = zip.entries()
+                                    while (entries.hasMoreElements()) {
+                                        val entry = entries.nextElement()
+                                        val prefix = "lib/$bestAbi/"
+                                        if (entry.name.startsWith(prefix) && entry.name.endsWith(".so")) {
+                                            val fileName = entry.name.substring(prefix.length)
+                                            val destFile = File(libDir, fileName)
+                                            zip.getInputStream(entry).use { zipInput ->
+                                                destFile.outputStream().use { output ->
+                                                    zipInput.copyTo(output)
+                                                }
+                                            }
+                                            Log.d("VirtualSpaceManager", "XAPK: Extracted native library ${entry.name} to ${destFile.absolutePath}")
+                                        }
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                Log.e("VirtualSpaceManager", "Failed to extract native libraries from ${apk.name}", e)
+                            }
+                        }
+                    }
+                }
+
+                return Pair(true, "Kloning XAPK berhasil.")
+            } catch (e: Exception) {
+                Log.e("VirtualSpaceManager", "Error installing XAPK", e)
+                return Pair(false, "Kesalahan memasang XAPK: ${e.message}")
+            } finally {
+                tempDir.deleteRecursively()
+            }
+        } else {
+            // Handle standard APK installation
+            val result = BlackBoxCore.get().installPackageAsUser(file, userId)
+            return Pair(result.success, result.msg ?: "")
         }
-        val result = BlackBoxCore.get().installPackageAsUser(tempFile, userId)
-        tempFile.delete()
-        return Pair(result.success, result.msg ?: "")
     }
 
-    fun downloadAndInstallFromUrl(urlStr: String, userId: Int): Pair<Boolean, String> {
-        val tempFile = File(context.cacheDir, "download_temp_${System.currentTimeMillis()}.apk")
-        val url = URL(urlStr)
-        val connection = url.openConnection() as HttpURLConnection
-        connection.connectTimeout = 15000
-        connection.readTimeout = 15000
-        connection.connect()
-
-        if (connection.responseCode in 200..299) {
-            connection.inputStream.use { input ->
+    fun installFromUri(uri: Uri, userId: Int): Pair<Boolean, String> {
+        val tempFile = File(context.cacheDir, "install_temp_${System.currentTimeMillis()}.apk")
+        try {
+            context.contentResolver.openInputStream(uri)?.use { input ->
                 tempFile.outputStream().use { output ->
                     input.copyTo(output)
                 }
             }
-            val result = BlackBoxCore.get().installPackageAsUser(tempFile, userId)
-            tempFile.delete()
-            return Pair(result.success, result.msg ?: "")
-        } else {
-            return Pair(false, "HTTP ${connection.responseCode}")
+            if (!tempFile.exists() || tempFile.length() == 0L) {
+                return Pair(false, "Gagal membaca file APK dari penyimpanan.")
+            }
+            return installFromFile(tempFile, userId)
+        } catch (e: Exception) {
+            return Pair(false, "Gagal memasang APK: ${e.message}")
+        } finally {
+            if (tempFile.exists()) {
+                tempFile.delete()
+            }
+        }
+    }
+
+    fun downloadAndInstallFromUrl(urlStr: String, userId: Int): Pair<Boolean, String> {
+        val tempFile = File(context.cacheDir, "download_temp_${System.currentTimeMillis()}.apk")
+        try {
+            val url = URL(urlStr)
+            val connection = url.openConnection() as HttpURLConnection
+            connection.connectTimeout = 15000
+            connection.readTimeout = 15000
+            connection.connect()
+
+            if (connection.responseCode in 200..299) {
+                connection.inputStream.use { input ->
+                    tempFile.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                return installFromFile(tempFile, userId)
+            } else {
+                return Pair(false, "HTTP ${connection.responseCode}")
+            }
+        } catch (e: Exception) {
+            return Pair(false, "Gagal mengunduh dan memasang: ${e.message}")
+        } finally {
+            if (tempFile.exists()) {
+                tempFile.delete()
+            }
         }
     }
 }

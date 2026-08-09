@@ -16,21 +16,19 @@ class AuthAndUserManager(
     private val prefs: SharedPreferences
 ) {
 
-    private val _currentUserSession = MutableStateFlow<String?>(prefs.getString("auth_username", null))
+    private val _currentUserSession = MutableStateFlow<String?>("EQuinox-Bypassed-User")
     val currentUserSession: StateFlow<String?> = _currentUserSession.asStateFlow()
 
-    private val _isCheckingSession = MutableStateFlow(true)
+    private val _isCheckingSession = MutableStateFlow(false)
     val isCheckingSession: StateFlow<Boolean> = _isCheckingSession.asStateFlow()
 
-    private val _expiryTime = MutableStateFlow<Long?>(
-        prefs.getLong("auth_expiry", 0L).let { if (it == 0L) null else it }
-    )
+    private val _expiryTime = MutableStateFlow<Long?>(System.currentTimeMillis() + (365L * 24 * 60 * 60 * 1000))
     val expiryTime: StateFlow<Long?> = _expiryTime.asStateFlow()
 
-    private val _userRole = MutableStateFlow<String?>(prefs.getString("auth_role", null))
+    private val _userRole = MutableStateFlow<String?>("admin")
     val userRole: StateFlow<String?> = _userRole.asStateFlow()
 
-    private val _isRegisteredDevice = MutableStateFlow(prefs.getBoolean("is_registered_device", false))
+    private val _isRegisteredDevice = MutableStateFlow(true)
     val isRegisteredDevice: StateFlow<Boolean> = _isRegisteredDevice.asStateFlow()
 
     private val _firestoreUsers = MutableStateFlow<List<FirestoreUser>>(emptyList())
@@ -112,12 +110,11 @@ class AuthAndUserManager(
     }
 
     fun validateSession(onRoleChanged: (String) -> Unit, onExpired: () -> Unit) {
-        _isCheckingSession.value = true
-        val savedAuth = prefs.getString("auth_uid", null)
-        if (savedAuth != null) {
-            listenToCurrentUserSession(onRoleChanged, onExpired)
-        }
         _isCheckingSession.value = false
+        _currentUserSession.value = "EQuinox-Bypassed-User"
+        _userRole.value = "admin"
+        _isRegisteredDevice.value = true
+        onRoleChanged("Administrator")
     }
 
     fun authenticateDevice(
@@ -125,75 +122,11 @@ class AuthAndUserManager(
         onExpired: () -> Unit,
         onResult: (Boolean, String) -> Unit
     ) {
-        val currentDeviceHwid = EQuinoxApp.getDeviceHwid()
-        try {
-            val db = getFirestoreDb()
-            val userDocRef = db.collection("users").document(currentDeviceHwid)
-
-            userDocRef.get().addOnSuccessListener { document ->
-                if (document.exists()) {
-                    val expiredAt = document.getLong("expiredAt") ?: 0L
-                    val role = document.getString("role") ?: "member"
-
-                    if (System.currentTimeMillis() > expiredAt && role == "member") {
-                        _isRegisteredDevice.value = true
-                        _userRole.value = role
-                        onResult(false, "Masa aktif perangkat telah habis! Silakan perpanjang.")
-                    } else {
-                        prefs.edit()
-                            .putString("auth_uid", currentDeviceHwid)
-                            .putString("auth_role", role)
-                            .putLong("auth_expiry", expiredAt)
-                            .putBoolean("is_registered_device", true)
-                            .apply()
-
-                        _currentUserSession.value = currentDeviceHwid
-                        _expiryTime.value = expiredAt
-                        _userRole.value = role
-                        _isRegisteredDevice.value = true
-                        listenToCurrentUserSession(onRoleChanged, onExpired)
-                        onResult(true, "Berhasil masuk sebagai ${role.replaceFirstChar { it.uppercase() }}")
-                    }
-                } else {
-                    val now = System.currentTimeMillis()
-                    val threeDaysMs = 3L * 24L * 60L * 60L * 1000L
-                    val expiry = now + threeDaysMs
-                    val role = "member"
-
-                    val userData = hashMapOf(
-                        "uid" to currentDeviceHwid,
-                        "createdAt" to now,
-                        "expiredAt" to expiry,
-                        "role" to role,
-                        "status" to "active"
-                    )
-
-                    userDocRef.set(userData)
-                        .addOnSuccessListener {
-                            prefs.edit()
-                                .putString("auth_uid", currentDeviceHwid)
-                                .putString("auth_role", role)
-                                .putLong("auth_expiry", expiry)
-                                .putBoolean("is_registered_device", true)
-                                .apply()
-
-                            _currentUserSession.value = currentDeviceHwid
-                            _expiryTime.value = expiry
-                            _userRole.value = role
-                            _isRegisteredDevice.value = true
-                            listenToCurrentUserSession(onRoleChanged, onExpired)
-                            onResult(true, "Pendaftaran berhasil!")
-                        }
-                        .addOnFailureListener { e ->
-                            onResult(false, "Gagal mendaftarkan perangkat: ${e.localizedMessage}")
-                        }
-                }
-            }.addOnFailureListener { e ->
-                onResult(false, "Gagal menghubungi server: ${e.localizedMessage}")
-            }
-        } catch (e: Exception) {
-            onResult(false, "Terjadi kesalahan: ${e.message}")
-        }
+        _currentUserSession.value = "EQuinox-Bypassed-User"
+        _userRole.value = "admin"
+        _isRegisteredDevice.value = true
+        onRoleChanged("Administrator")
+        onResult(true, "Akses Terbuka (Anti-Tamper Removed)")
     }
 
     fun logout() {
