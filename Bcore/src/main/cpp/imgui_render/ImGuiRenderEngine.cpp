@@ -477,6 +477,7 @@ static void apply_hooks_to_library(const std::string& lib_name) {
     bytehook_hook_single(lib_name.c_str(), nullptr, "eglSwapBuffers", (void*)hook_eglSwapBuffers, nullptr, nullptr);
     bytehook_hook_single(lib_name.c_str(), nullptr, "eglSwapBuffersWithDamageEXT", (void*)hook_eglSwapBuffersWithDamageEXT, nullptr, nullptr);
     bytehook_hook_single(lib_name.c_str(), nullptr, "eglSwapBuffersWithDamageKHR", (void*)hook_eglSwapBuffersWithDamageKHR, nullptr, nullptr);
+    bytehook_hook_single(lib_name.c_str(), nullptr, "eglGetProcAddress", (void*)hook_eglGetProcAddress, nullptr, nullptr);
     bytehook_hook_single(lib_name.c_str(), nullptr, "dlsym", (void*)hook_dlsym, nullptr, nullptr);
     bytehook_hook_single(lib_name.c_str(), nullptr, "AInputQueue_getEvent", (void*)hook_AInputQueue_getEvent, nullptr, nullptr);
 }
@@ -507,6 +508,7 @@ static void library_monitor_thread_func() {
             bytehook_hook_all(nullptr, "eglSwapBuffers", (void*)hook_eglSwapBuffers, nullptr, nullptr);
             bytehook_hook_all(nullptr, "eglSwapBuffersWithDamageEXT", (void*)hook_eglSwapBuffersWithDamageEXT, nullptr, nullptr);
             bytehook_hook_all(nullptr, "eglSwapBuffersWithDamageKHR", (void*)hook_eglSwapBuffersWithDamageKHR, nullptr, nullptr);
+            bytehook_hook_all(nullptr, "eglGetProcAddress", (void*)hook_eglGetProcAddress, nullptr, nullptr);
             bytehook_hook_all(nullptr, "dlsym", (void*)hook_dlsym, nullptr, nullptr);
         }
 
@@ -539,6 +541,7 @@ void ImGuiRenderEngine::init(const char* packageName) {
     bytehook_hook_all(nullptr, "eglSwapBuffers", (void*)hook_eglSwapBuffers, nullptr, nullptr);
     bytehook_hook_all(nullptr, "eglSwapBuffersWithDamageEXT", (void*)hook_eglSwapBuffersWithDamageEXT, nullptr, nullptr);
     bytehook_hook_all(nullptr, "eglSwapBuffersWithDamageKHR", (void*)hook_eglSwapBuffersWithDamageKHR, nullptr, nullptr);
+    bytehook_hook_all(nullptr, "eglGetProcAddress", (void*)hook_eglGetProcAddress, nullptr, nullptr);
     bytehook_hook_all(nullptr, "dlsym", (void*)hook_dlsym, nullptr, nullptr);
     bytehook_hook_all(nullptr, "AInputQueue_getEvent", (void*)hook_AInputQueue_getEvent, nullptr, nullptr);
 
