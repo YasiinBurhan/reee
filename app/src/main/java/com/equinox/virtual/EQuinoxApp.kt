@@ -62,18 +62,69 @@ class EQuinoxApp : Application() {
 
         fun getDeviceHwid(): String {
             return try {
+                // 1. Try Widevine DRM Hardware Device Unique ID (Permanent hardware TEE identifier)
+                val widevineId = getWidevineHardwareId()
+                if (!widevineId.isNullOrEmpty()) {
+                    return "EQ-$widevineId"
+                }
+
+                // 2. Fallback to Hardware Specs SHA-256 Fingerprint
                 val context = getContext()
-                val androidId = android.provider.Settings.Secure.getString(
-                    context.contentResolver,
-                    android.provider.Settings.Secure.ANDROID_ID
-                )
-                if (androidId.isNullOrEmpty()) {
-                    "EQ-UNKNOWN"
+                val androidId = try {
+                    android.provider.Settings.Secure.getString(
+                        context.contentResolver,
+                        android.provider.Settings.Secure.ANDROID_ID
+                    ) ?: ""
+                } catch (e: Exception) {
+                    ""
+                }
+
+                val hardwareSpecs = StringBuilder()
+                    .append(android.os.Build.MANUFACTURER.uppercase()).append("|")
+                    .append(android.os.Build.MODEL.uppercase()).append("|")
+                    .append(android.os.Build.BOARD.uppercase()).append("|")
+                    .append(android.os.Build.HARDWARE.uppercase()).append("|")
+                    .append(android.os.Build.BRAND.uppercase()).append("|")
+                    .append(android.os.Build.DEVICE.uppercase()).append("|")
+                    .append(android.os.Build.PRODUCT.uppercase()).append("|")
+                    .append(androidId)
+                    .toString()
+
+                val md = java.security.MessageDigest.getInstance("SHA-256")
+                val digest = md.digest(hardwareSpecs.toByteArray(Charsets.UTF_8))
+                val hexString = digest.fold("") { str, it -> str + "%02X".format(it) }.take(16)
+
+                "EQ-$hexString"
+            } catch (e: Exception) {
+                Log.e(TAG, "Error generating HWID: ${e.message}")
+                "EQ-ERROR"
+            }
+        }
+
+        private fun getWidevineHardwareId(): String? {
+            var mediaDrm: android.media.MediaDrm? = null
+            return try {
+                val widevineUuid = java.util.UUID.fromString("edef8ba9-79d6-4ace-a3c8-27dcd51d21ed")
+                mediaDrm = android.media.MediaDrm(widevineUuid)
+                val deviceUniqueId = mediaDrm.getPropertyByteArray(android.media.MediaDrm.PROPERTY_DEVICE_UNIQUE_ID)
+                if (deviceUniqueId != null && deviceUniqueId.isNotEmpty()) {
+                    val md = java.security.MessageDigest.getInstance("SHA-256")
+                    val digest = md.digest(deviceUniqueId)
+                    digest.fold("") { str, it -> str + "%02X".format(it) }.take(16)
                 } else {
-                    "EQ-${androidId.uppercase()}"
+                    null
                 }
             } catch (e: Exception) {
-                "EQ-ERROR"
+                null
+            } finally {
+                try {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                        mediaDrm?.close()
+                    } else {
+                        @Suppress("DEPRECATION")
+                        mediaDrm?.release()
+                    }
+                } catch (ignored: Exception) {}
             }
         }
     }

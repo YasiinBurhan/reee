@@ -38,6 +38,9 @@ class BlackBoxViewModel(application: Application) : AndroidViewModel(application
     val allowedPackages: StateFlow<Set<String>> = allowedPackagesManager.allowedPackages
     val allowedPackageList: StateFlow<List<AllowedPackage>> = allowedPackagesManager.allowedPackageList
 
+    private val _runningPackageName = MutableStateFlow<String?>(null)
+    val runningPackageName: StateFlow<String?> = _runningPackageName.asStateFlow()
+
     val deviceSpoofingEnabled: StateFlow<Boolean> = settingsManager.deviceSpoofingEnabled
     val gmsProxyEnabled: StateFlow<Boolean> = settingsManager.gmsProxyEnabled
     val storageIsolationEnabled: StateFlow<Boolean> = settingsManager.storageIsolationEnabled
@@ -234,6 +237,7 @@ class BlackBoxViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun launchVirtualApp(packageName: String, isModMode: Boolean = false) {
+        _runningPackageName.value = packageName
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 if (isModMode) {

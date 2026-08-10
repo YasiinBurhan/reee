@@ -63,45 +63,7 @@ fun SettingTabScreen(
                         onClick = onNavigateToAllowedPackages
                     )
                 }
-                item {
-                    val menuModEnabled by viewModel.menuModSurfaceEnabled.collectAsState()
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.medium,
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Tune,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "MenuMod Overlay Canvas (Admin Only)",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = "Aktifkan MenuMod iOS overlay langsung di ruang virtual tanpa per-package",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Switch(
-                                checked = menuModEnabled,
-                                onCheckedChange = { viewModel.setMenuModSurfaceEnabled(it) }
-                            )
-                        }
-                    }
-                }
+
             }
             item {
                 ProfileMenuItem(

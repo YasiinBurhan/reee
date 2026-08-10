@@ -32,18 +32,66 @@ fun UserManagementScreen(
     var showTopUpDialog by remember { mutableStateOf<FirestoreUser?>(null) }
     var searchQuery by remember { mutableStateOf("") }
     var currentPage by remember { mutableIntStateOf(1) }
+    var selectedTabIndex by remember { mutableIntStateOf(0) }
     val itemsPerPage = 10
 
-    val filteredUsers = users.filter { 
+    val isAdmin = currentUserRole?.lowercase() == "admin"
+    val currentTime = System.currentTimeMillis()
+
+    val activeCount = remember(users, currentTime) {
+        users.count { 
+            val role = it.role.lowercase()
+            role != "reseller" && role != "admin" && it.expiredAt > currentTime 
+        }
+    }
+    val inactiveCount = remember(users, currentTime) {
+        users.count { 
+            val role = it.role.lowercase()
+            role != "reseller" && role != "admin" && it.expiredAt <= currentTime 
+        }
+    }
+    val resellerCount = remember(users) {
+        users.count { it.role.lowercase() == "reseller" }
+    }
+
+    val tabTitles = if (isAdmin) {
+        listOf("Member Aktif ($activeCount)", "Tidak Aktif ($inactiveCount)", "Reseller ($resellerCount)")
+    } else {
+        listOf("Member Aktif ($activeCount)", "Tidak Aktif ($inactiveCount)")
+    }
+
+    val tabFilteredUsers = users.filter { user ->
+        val role = user.role.lowercase()
+        val isSpecial = role == "reseller" || role == "admin"
+        val isReseller = role == "reseller"
+        val isActive = user.expiredAt > currentTime
+
+        if (isAdmin) {
+            when (selectedTabIndex) {
+                0 -> !isSpecial && isActive
+                1 -> !isSpecial && !isActive
+                2 -> isReseller
+                else -> true
+            }
+        } else {
+            when (selectedTabIndex) {
+                0 -> !isSpecial && isActive
+                1 -> !isSpecial && !isActive
+                else -> true
+            }
+        }
+    }
+
+    val filteredUsers = tabFilteredUsers.filter { 
         it.uid.contains(searchQuery, ignoreCase = true) || 
         it.role.contains(searchQuery, ignoreCase = true)
     }
     
-    val totalPages = (filteredUsers.size + itemsPerPage - 1) / itemsPerPage
+    val totalPages = ((filteredUsers.size + itemsPerPage - 1) / itemsPerPage).coerceAtLeast(1)
     val paginatedUsers = filteredUsers.drop((currentPage - 1) * itemsPerPage).take(itemsPerPage)
 
-    // Reset page when search changes
-    LaunchedEffect(searchQuery) {
+    // Reset page when search or tab changes
+    LaunchedEffect(searchQuery, selectedTabIndex) {
         currentPage = 1
     }
 
@@ -80,6 +128,23 @@ fun UserManagementScreen(
                         unfocusedContainerColor = MaterialTheme.colorScheme.surface
                     )
                 )
+                TabRow(
+                    selectedTabIndex = selectedTabIndex.coerceIn(0, tabTitles.size - 1)
+                ) {
+                    tabTitles.forEachIndexed { index, title ->
+                        Tab(
+                            selected = selectedTabIndex == index,
+                            onClick = { selectedTabIndex = index },
+                            text = {
+                                Text(
+                                    text = title,
+                                    fontWeight = if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Normal,
+                                    maxLines = 1
+                                )
+                            }
+                        )
+                    }
+                }
             }
         }
     ) { padding ->

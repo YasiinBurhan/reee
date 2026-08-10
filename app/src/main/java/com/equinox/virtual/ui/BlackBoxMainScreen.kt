@@ -1,7 +1,5 @@
 package com.equinox.virtual.ui
 
-import com.equinox.virtual.menu.MenuModHUD
-
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -100,6 +98,7 @@ fun BlackBoxMainScreen(
     val storageIsolationEnabled by viewModel.storageIsolationEnabled.collectAsState()
     val rootHideEnabled by viewModel.rootHideEnabled.collectAsState()
     val menuModSurfaceEnabled by viewModel.menuModSurfaceEnabled.collectAsState()
+    val runningPackageName by viewModel.runningPackageName.collectAsState()
     val currentUserSession by viewModel.currentUserSession.collectAsState()
     val expiryTime by viewModel.expiryTime.collectAsState()
     val isDarkThemePref by viewModel.isDarkTheme.collectAsState()
@@ -108,6 +107,12 @@ fun BlackBoxMainScreen(
     val isDarkTheme = isDarkThemePref ?: androidx.compose.foundation.isSystemInDarkTheme()
 
     val context = LocalContext.current
+    val isExpired = remember(userRole, expiryTime) {
+        val role = userRole?.lowercase() ?: "member"
+        val isPrivileged = role == "admin" || role == "reseller"
+        !isPrivileged && (expiryTime ?: 0L) <= System.currentTimeMillis()
+    }
+
     var pendingLaunchApp by remember { mutableStateOf<VirtualAppInfo?>(null) }
     var selectedTab by remember { mutableIntStateOf(0) } 
     var selectedBottomNavIndex by remember { mutableIntStateOf(2) }
@@ -272,8 +277,8 @@ fun BlackBoxMainScreen(
                         onNavigateToVirtualSpace = { selectedBottomNavIndex = 2 },
                         onNavigateToDownload = { selectedBottomNavIndex = 1 },
                         onLaunchApp = { app ->
-                            if (false) {
-                                viewModel.launchVirtualApp(app.packageName, true)
+                            if (isExpired) {
+                                android.widget.Toast.makeText(context, "Masa aktif telah berakhir. Ruang virtual terkunci.", android.widget.Toast.LENGTH_SHORT).show()
                             } else {
                                 pendingLaunchApp = app
                             }
@@ -290,20 +295,28 @@ fun BlackBoxMainScreen(
                         hostApps = hostApps,
                         allowedPackages = allowedPackages,
                         selectedTab = selectedTab,
+                        isExpired = isExpired,
+                        expiryTime = expiryTime,
                         onSelectTab = { selectedTab = it },
                         onSelectUser = { viewModel.selectUser(it) },
                         onAddUser = { viewModel.addUser() },
                         onDeleteUser = { viewModel.deleteUser(it) },
                         onLaunchVirtualApp = { app ->
-                            if (false) {
-                                viewModel.launchVirtualApp(app.packageName, true)
+                            if (isExpired) {
+                                android.widget.Toast.makeText(context, "Masa aktif telah berakhir. Ruang virtual terkunci.", android.widget.Toast.LENGTH_SHORT).show()
                             } else {
                                 pendingLaunchApp = app
                             }
                         },
                         onClearVirtualAppData = { viewModel.clearVirtualAppData(it) },
                         onUninstallVirtualApp = { viewModel.uninstallVirtualApp(it) },
-                        onCloneHostApp = { viewModel.installAppToVirtual(it) }
+                        onCloneHostApp = { pkg ->
+                            if (isExpired) {
+                                android.widget.Toast.makeText(context, "Masa aktif telah berakhir. Ruang virtual terkunci.", android.widget.Toast.LENGTH_SHORT).show()
+                            } else {
+                                viewModel.installAppToVirtual(pkg)
+                            }
+                        }
                     )
                     3 -> ProfilTabScreen(
                         currentUserId = currentUserId,
@@ -358,6 +371,7 @@ fun BlackBoxMainScreen(
                                 SystemStatisticsScreen(
                                     stats = stats,
                                     isLoading = isLoadingStats,
+                                    currentUserRole = userRole,
                                     onBack = { activeSettingsSubScreen = null }
                                 )
                             }
@@ -387,10 +401,4 @@ fun BlackBoxMainScreen(
             }
         )
     }
-
-    MenuModHUD(
-        enabled = menuModSurfaceEnabled,
-        userRole = userRole,
-        onClose = { viewModel.setMenuModSurfaceEnabled(false) }
-    )
 }

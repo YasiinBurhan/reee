@@ -24,10 +24,19 @@ class LicenseAndStatsManager(
             val db = getDbFunc()
             db.collection("users").get().addOnSuccessListener { userDocs ->
                 val stats = mutableMapOf<String, Int>()
+                val currentTime = System.currentTimeMillis()
+                
                 stats["total_users"] = userDocs.size()
-                stats["admin_count"] = userDocs.documents.count { it.getString("role") == "admin" }
-                stats["reseller_count"] = userDocs.documents.count { it.getString("role") == "reseller" }
-                stats["member_count"] = userDocs.documents.count { it.getString("role") == "member" }
+                stats["admin_count"] = userDocs.documents.count { (it.getString("role") ?: "").lowercase() == "admin" }
+                stats["reseller_count"] = userDocs.documents.count { (it.getString("role") ?: "").lowercase() == "reseller" }
+                
+                val memberDocs = userDocs.documents.filter { 
+                    val role = (it.getString("role") ?: "").lowercase()
+                    role != "admin" && role != "reseller"
+                }
+                stats["member_count"] = memberDocs.size
+                stats["active_members"] = memberDocs.count { (it.getLong("expiredAt") ?: 0L) > currentTime }
+                stats["inactive_members"] = memberDocs.count { (it.getLong("expiredAt") ?: 0L) <= currentTime }
 
                 val totalBalance = userDocs.documents.sumOf { it.getLong("balance") ?: 0L }
                 stats["total_balance"] = totalBalance.toInt()

@@ -118,7 +118,6 @@ class AuthAndUserManager(
                         }
 
                         if (System.currentTimeMillis() > expiredAt && role == "member") {
-                            logout()
                             onExpired()
                         }
                     } else if (_currentUserSession.value != null) {
@@ -222,30 +221,32 @@ class AuthAndUserManager(
                                 return@addOnSuccessListener
                             }
 
-                            if (System.currentTimeMillis() > expiredAt && role == "member") {
-                                _isCheckingSession.value = false
-                                onResult(false, "Masa aktif lisensi Anda telah berakhir!")
-                            } else {
-                                _currentUserSession.value = currentDeviceHwid
-                                _expiryTime.value = expiredAt
-                                _userRole.value = role
-                                _isRegisteredDevice.value = true
-                                
-                                prefs.edit()
-                                    .putString("auth_uid", currentDeviceHwid)
-                                    .putLong("auth_expiry", expiredAt)
-                                    .putString("auth_role", role)
-                                    .putBoolean("is_registered_device", true)
-                                    .apply()
+                            val isExpired = System.currentTimeMillis() > expiredAt && role == "member"
 
-                                val roleDisplay = when (role.lowercase()) {
-                                    "admin" -> "Administrator"
-                                    "reseller" -> "Reseller"
-                                    else -> "Member"
-                                }
-                                onRoleChanged(roleDisplay)
-                                _isCheckingSession.value = false
-                                listenToCurrentUserSession(onRoleChanged, onExpired)
+                            _currentUserSession.value = currentDeviceHwid
+                            _expiryTime.value = expiredAt
+                            _userRole.value = role
+                            _isRegisteredDevice.value = true
+                            
+                            prefs.edit()
+                                .putString("auth_uid", currentDeviceHwid)
+                                .putLong("auth_expiry", expiredAt)
+                                .putString("auth_role", role)
+                                .putBoolean("is_registered_device", true)
+                                .apply()
+
+                            val roleDisplay = when (role.lowercase()) {
+                                "admin" -> "Administrator"
+                                "reseller" -> "Reseller"
+                                else -> if (isExpired) "Member (Kadaluwarsa)" else "Member"
+                            }
+                            onRoleChanged(roleDisplay)
+                            _isCheckingSession.value = false
+                            listenToCurrentUserSession(onRoleChanged, onExpired)
+
+                            if (isExpired) {
+                                onResult(true, "Masuk Berhasil. Masa aktif telah berakhir - Halaman Virtual Terkunci.")
+                            } else {
                                 onResult(true, "Selamat Datang Kembali!")
                             }
                         } else {

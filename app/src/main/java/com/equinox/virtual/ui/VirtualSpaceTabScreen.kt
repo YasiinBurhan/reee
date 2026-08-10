@@ -20,6 +20,8 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Launch
 import androidx.compose.material.icons.filled.Add
@@ -73,6 +75,8 @@ fun VirtualSpaceTabScreen(
     hostApps: List<VirtualAppInfo>,
     allowedPackages: Set<String> = emptySet(),
     selectedTab: Int,
+    isExpired: Boolean = false,
+    expiryTime: Long? = null,
     onSelectTab: (Int) -> Unit,
     onSelectUser: (Int) -> Unit,
     onAddUser: () -> Unit,
@@ -82,67 +86,164 @@ fun VirtualSpaceTabScreen(
     onUninstallVirtualApp: (String) -> Unit,
     onCloneHostApp: (String) -> Unit
 ) {
-    val tabs = listOf("SANDBOX", "PERANGKAT")
-
-    Column(modifier = Modifier.fillMaxSize()) {
-        // iOS style Segmented Control
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp, start = 16.dp, end = 16.dp, bottom = 12.dp),
-            shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        ) {
-            Row(
+    if (isExpired) {
+        LockedVirtualSpaceView(expiryTime = expiryTime)
+    } else {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // iOS style Segmented Control
+            Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(2.dp),
-                horizontalArrangement = Arrangement.spacedBy(2.dp)
+                    .padding(top = 8.dp, start = 16.dp, end = 16.dp, bottom = 12.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
             ) {
-                listOf("SANDBOX", "PERANGKAT").forEachIndexed { index, label ->
-                    val isSelected = selectedTab == index
-                    Surface(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(32.dp)
-                            .clickable { onSelectTab(index) },
-                        shape = RoundedCornerShape(10.dp),
-                        color = if (isSelected) MaterialTheme.colorScheme.surface else Color.Transparent,
-                        shadowElevation = if (isSelected) 2.dp else 0.dp
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                text = label,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Bold,
-                                color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    listOf("SANDBOX", "PERANGKAT").forEachIndexed { index, label ->
+                        val isSelected = selectedTab == index
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(32.dp)
+                                .clickable { onSelectTab(index) },
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (isSelected) MaterialTheme.colorScheme.surface else Color.Transparent,
+                            shadowElevation = if (isSelected) 2.dp else 0.dp
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Bold,
+                                    color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
                 }
             }
-        }
 
-        when (selectedTab) {
-            0 -> {
-                if (virtualApps.isEmpty()) {
-                    EmptyVirtualAppsView(onSelectHostAppsTab = { onSelectTab(1) })
-                } else {
-                    VirtualAppsGrid(
-                        apps = virtualApps,
+            when (selectedTab) {
+                0 -> {
+                    if (virtualApps.isEmpty()) {
+                        EmptyVirtualAppsView(onSelectHostAppsTab = { onSelectTab(1) })
+                    } else {
+                        VirtualAppsGrid(
+                            apps = virtualApps,
+                            allowedPackages = allowedPackages,
+                            onLaunch = onLaunchVirtualApp,
+                            onClearData = onClearVirtualAppData,
+                            onUninstall = onUninstallVirtualApp
+                        )
+                    }
+                }
+                1 -> {
+                    HostAppsList(
+                        hostApps = hostApps,
                         allowedPackages = allowedPackages,
-                        onLaunch = onLaunchVirtualApp,
-                        onClearData = onClearVirtualAppData,
-                        onUninstall = onUninstallVirtualApp
+                        onCloneApp = onCloneHostApp
                     )
                 }
             }
-            1 -> {
-                HostAppsList(
-                    hostApps = hostApps,
-                    allowedPackages = allowedPackages,
-                    onCloneApp = onCloneHostApp
+        }
+    }
+}
+
+@Composable
+fun LockedVirtualSpaceView(
+    expiryTime: Long? = null
+) {
+    val context = LocalContext.current
+    val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
+    val deviceHwid = remember { com.equinox.virtual.EQuinoxApp.getDeviceHwid() }
+    val formattedExpiry = remember(expiryTime) {
+        if (expiryTime != null && expiryTime > 0) {
+            val sdf = java.text.SimpleDateFormat("dd MMMM yyyy, HH:mm", java.util.Locale("id", "ID"))
+            sdf.format(java.util.Date(expiryTime))
+        } else {
+            "Masa aktif telah habis"
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = iOSRed.copy(alpha = 0.12f),
+            modifier = Modifier.size(100.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = "Terkunci",
+                    tint = iOSRed,
+                    modifier = Modifier.size(52.dp)
                 )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            text = "Halaman Virtual Terkunci",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.ExtraBold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "Masa aktif lisensi perangkat Anda telah berakhir ($formattedExpiry).\nSilakan hubungi Reseller atau Admin untuk memperpanjang lisensi Anda.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(28.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "ID PERANGKAT (HWID)",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = deviceHwid,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Button(
+                    onClick = {
+                        clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(deviceHwid))
+                        android.widget.Toast.makeText(context, "ID Perangkat disalin ke papan klip!", android.widget.Toast.LENGTH_SHORT).show()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = iOSBlue),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Salin HWID untuk Perpanjang", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                }
             }
         }
     }

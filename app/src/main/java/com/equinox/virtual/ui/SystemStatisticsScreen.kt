@@ -25,12 +25,15 @@ import com.equinox.virtual.ui.theme.*
 fun SystemStatisticsScreen(
     stats: Map<String, Int>,
     isLoading: Boolean,
+    currentUserRole: String? = null,
     onBack: () -> Unit
 ) {
+    val isAdmin = currentUserRole?.lowercase() == "admin"
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Statistik Sistem") },
+                title = { Text(if (isAdmin) "Statistik Sistem (Admin)" else "Statistik Client & Lisensi") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Kembali")
@@ -51,107 +54,227 @@ fun SystemStatisticsScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                item {
-                    Text(
-                        text = "Ringkasan Pengguna",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                item {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        StatCard(
-                            modifier = Modifier.weight(1f),
-                            title = "Total User",
-                            value = stats["total_users"]?.toString() ?: "0",
-                            icon = Icons.Default.People,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        StatCard(
-                            modifier = Modifier.weight(1f),
-                            title = "Reseller",
-                            value = stats["reseller_count"]?.toString() ?: "0",
-                            icon = Icons.Default.Storefront,
-                            color = MaterialTheme.colorScheme.secondary
+                if (isAdmin) {
+                    item {
+                        Text(
+                            text = "Ringkasan Akun Sistem",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
                         )
                     }
-                }
 
-                item {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        StatCard(
-                            modifier = Modifier.weight(1f),
-                            title = "Member",
-                            value = stats["member_count"]?.toString() ?: "0",
-                            icon = Icons.Default.Person,
-                            color = MaterialTheme.colorScheme.tertiary
-                        )
-                        StatCard(
-                            modifier = Modifier.weight(1f),
-                            title = "Admin",
-                            value = stats["admin_count"]?.toString() ?: "0",
-                            icon = Icons.Default.AdminPanelSettings,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                }
-
-                item {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Manajemen Lisensi",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                item {
-                    Card(
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            LicenseProgressRow(
-                                label = "Lisensi Terpakai",
-                                value = stats["used_licenses"] ?: 0,
-                                total = stats["total_licenses"] ?: 1,
+                    item {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            StatCard(
+                                modifier = Modifier.weight(1f),
+                                title = "Total User",
+                                value = stats["total_users"]?.toString() ?: "0",
+                                icon = Icons.Default.People,
                                 color = MaterialTheme.colorScheme.primary
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            LicenseProgressRow(
-                                label = "Lisensi Tersedia",
-                                value = stats["available_licenses"] ?: 0,
-                                total = stats["total_licenses"] ?: 1,
-                                color = iOSGreen
+                            StatCard(
+                                modifier = Modifier.weight(1f),
+                                title = "Reseller",
+                                value = stats["reseller_count"]?.toString() ?: "0",
+                                icon = Icons.Default.Storefront,
+                                color = MaterialTheme.colorScheme.secondary
                             )
                         }
                     }
-                }
 
-                item {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Informasi Tambahan",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                    item {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            StatCard(
+                                modifier = Modifier.weight(1f),
+                                title = "Member Aktif",
+                                value = stats["active_members"]?.toString() ?: "0",
+                                icon = Icons.Default.CheckCircle,
+                                color = iOSGreen
+                            )
+                            StatCard(
+                                modifier = Modifier.weight(1f),
+                                title = "Tidak Aktif",
+                                value = stats["inactive_members"]?.toString() ?: "0",
+                                icon = Icons.Default.Cancel,
+                                color = iOSRed
+                            )
+                        }
+                    }
 
-                item {
-                    Card(
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            InfoRow(label = "Total Database Lisensi", value = stats["total_licenses"]?.toString() ?: "0")
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
-                            InfoRow(label = "Total Saldo Beredar", value = "${stats["total_balance"] ?: 0} Credits")
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
-                            InfoRow(label = "Status Server", value = "Online", valueColor = iOSGreen)
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
-                            InfoRow(label = "Versi Sistem", value = "v2.1.0-secure")
+                    item {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            StatCard(
+                                modifier = Modifier.weight(1f),
+                                title = "Total Member",
+                                value = stats["member_count"]?.toString() ?: "0",
+                                icon = Icons.Default.Person,
+                                color = MaterialTheme.colorScheme.tertiary
+                            )
+                            StatCard(
+                                modifier = Modifier.weight(1f),
+                                title = "Admin",
+                                value = stats["admin_count"]?.toString() ?: "0",
+                                icon = Icons.Default.AdminPanelSettings,
+                                color = iOSOrange
+                            )
+                        }
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Rasio Keaktifan Lisensi",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    item {
+                        Card(
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                val totalMember = stats["member_count"] ?: 0
+                                val activeMember = stats["active_members"] ?: 0
+                                val inactiveMember = stats["inactive_members"] ?: 0
+
+                                LicenseProgressRow(
+                                    label = "Member Aktif",
+                                    value = activeMember,
+                                    total = if (totalMember > 0) totalMember else 1,
+                                    color = iOSGreen
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                LicenseProgressRow(
+                                    label = "Member Kadaluwarsa",
+                                    value = inactiveMember,
+                                    total = if (totalMember > 0) totalMember else 1,
+                                    color = iOSRed
+                                )
+                            }
+                        }
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Informasi Tambahan",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    item {
+                        Card(
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                InfoRow(label = "Total Saldo Beredar", value = "${stats["total_balance"] ?: 0} Credits")
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                                InfoRow(label = "Status Server", value = "Online", valueColor = iOSGreen)
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                                InfoRow(label = "Versi Sistem", value = "v2.1.0-secure")
+                            }
+                        }
+                    }
+                } else {
+                    // Reseller Layout
+                    item {
+                        Text(
+                            text = "Ringkasan Client Member",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    item {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            StatCard(
+                                modifier = Modifier.weight(1f),
+                                title = "Member Aktif",
+                                value = stats["active_members"]?.toString() ?: "0",
+                                icon = Icons.Default.CheckCircle,
+                                color = iOSGreen
+                            )
+                            StatCard(
+                                modifier = Modifier.weight(1f),
+                                title = "Tidak Aktif",
+                                value = stats["inactive_members"]?.toString() ?: "0",
+                                icon = Icons.Default.Cancel,
+                                color = iOSRed
+                            )
+                        }
+                    }
+
+                    item {
+                        StatCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            title = "Total Member Registered",
+                            value = stats["member_count"]?.toString() ?: "0",
+                            icon = Icons.Default.People,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Rasio Keaktifan Client",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    item {
+                        Card(
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                val totalMember = stats["member_count"] ?: 0
+                                val activeMember = stats["active_members"] ?: 0
+                                val inactiveMember = stats["inactive_members"] ?: 0
+
+                                LicenseProgressRow(
+                                    label = "Member Aktif",
+                                    value = activeMember,
+                                    total = if (totalMember > 0) totalMember else 1,
+                                    color = iOSGreen
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                LicenseProgressRow(
+                                    label = "Member Kadaluwarsa",
+                                    value = inactiveMember,
+                                    total = if (totalMember > 0) totalMember else 1,
+                                    color = iOSRed
+                                )
+                            }
+                        }
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Informasi Sistem",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    item {
+                        Card(
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                InfoRow(label = "Status Server", value = "Online", valueColor = iOSGreen)
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                                InfoRow(label = "Versi Sistem", value = "v2.1.0-secure")
+                            }
                         }
                     }
                 }
