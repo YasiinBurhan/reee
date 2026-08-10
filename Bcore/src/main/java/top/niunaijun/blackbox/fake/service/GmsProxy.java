@@ -93,49 +93,52 @@ public class GmsProxy extends BinderInvocationStub {
     }
 
     
-    @ProxyMethod("getService")
-    public static class GetService extends MethodHook {
-        private static void fixGmsFields(Object obj, String hostPkg) {
-            if (obj == null) return;
-            String virtualPkg = BlackBoxCore.getAppPackageName();
-            if (obj instanceof android.os.Bundle) {
+    private static void fixGmsFields(Object obj, String hostPkg) {
+        if (obj == null) return;
+        String virtualPkg = BlackBoxCore.getAppPackageName();
+        if (obj instanceof android.os.Bundle) {
+            try {
+                android.os.Bundle bundle = (android.os.Bundle) obj;
+                for (String key : new java.util.HashSet<>(bundle.keySet())) {
+                    Object val = bundle.get(key);
+                    if (val instanceof String) {
+                        String strVal = (String) val;
+                        if ("com.google.android.gms".equals(strVal) || (virtualPkg != null && virtualPkg.equals(strVal))) {
+                            bundle.putString(key, hostPkg);
+                        }
+                    }
+                }
+            } catch (Throwable ignored) {}
+            return;
+        }
+        if (obj instanceof String) {
+            return; // Strings are handled directly in the hook loop
+        }
+        Class<?> clazz = obj.getClass();
+        while (clazz != null && !clazz.getName().startsWith("java.lang.")) {
+            for (java.lang.reflect.Field field : clazz.getDeclaredFields()) {
                 try {
-                    android.os.Bundle bundle = (android.os.Bundle) obj;
-                    for (String key : bundle.keySet()) {
-                        Object val = bundle.get(key);
-                        if (val instanceof String) {
-                            String strVal = (String) val;
-                            if ("com.google.android.gms".equals(strVal) || (virtualPkg != null && virtualPkg.equals(strVal))) {
-                                bundle.putString(key, hostPkg);
-                            }
+                    field.setAccessible(true);
+                    if (field.getType() == String.class) {
+                        String val = (String) field.get(obj);
+                        if ("com.google.android.gms".equals(val) || (virtualPkg != null && virtualPkg.equals(val))) {
+                            field.set(obj, hostPkg);
+                            Slog.d(TAG, "GmsProxy: Fixed field " + field.getName() + " in " + clazz.getSimpleName() + " to " + hostPkg);
+                        }
+                    } else if (android.os.Bundle.class.isAssignableFrom(field.getType())) {
+                        Object bundleVal = field.get(obj);
+                        if (bundleVal != null) {
+                            fixGmsFields(bundleVal, hostPkg);
                         }
                     }
                 } catch (Throwable ignored) {}
-                return;
             }
-            Class<?> clazz = obj.getClass();
-            while (clazz != null && !clazz.getName().startsWith("java.lang.")) {
-                for (java.lang.reflect.Field field : clazz.getDeclaredFields()) {
-                    try {
-                        field.setAccessible(true);
-                        if (field.getType() == String.class) {
-                            String val = (String) field.get(obj);
-                            if ("com.google.android.gms".equals(val) || (virtualPkg != null && virtualPkg.equals(val))) {
-                                field.set(obj, hostPkg);
-                                Slog.d(TAG, "GmsProxy: Fixed field " + field.getName() + " in " + clazz.getSimpleName() + " to " + hostPkg);
-                            }
-                        } else if (android.os.Bundle.class.isAssignableFrom(field.getType())) {
-                            Object bundleVal = field.get(obj);
-                            if (bundleVal != null) {
-                                fixGmsFields(bundleVal, hostPkg);
-                            }
-                        }
-                    } catch (Throwable ignored) {}
-                }
-                clazz = clazz.getSuperclass();
-            }
+            clazz = clazz.getSuperclass();
         }
+    }
 
+    @ProxyMethod("getService")
+    public static class GetService extends MethodHook {
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
             try {
@@ -152,13 +155,20 @@ public class GmsProxy extends BinderInvocationStub {
                                 args[i] = hostPkg;
                                 Slog.d(TAG, "GmsProxy: Fixed calling package string at index " + i + " to " + hostPkg);
                             }
-                        } else if (args[i] != null && !(args[i] instanceof String) && !(args[i] instanceof Number) && !(args[i] instanceof Boolean)) {
+                        } else if (args[i] != null && !(args[i] instanceof Number) && !(args[i] instanceof Boolean)) {
                             fixGmsFields(args[i], hostPkg);
                         }
                     }
                 }
                 return method.invoke(who, args);
             } catch (Throwable e) {
+                if (e instanceof java.lang.reflect.InvocationTargetException) {
+                    Throwable cause = ((java.lang.reflect.InvocationTargetException) e).getTargetException();
+                    if (cause instanceof SecurityException) {
+                        Slog.e(TAG, "GmsProxy SecurityException in getService: " + cause.getMessage());
+                        throw cause;
+                    }
+                }
                 Slog.w(TAG, "GmsProxy: Intercepted getService error safely: " + e.getMessage());
                 return null;
             }
@@ -171,10 +181,27 @@ public class GmsProxy extends BinderInvocationStub {
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
             try {
+                if (!BlackBoxCore.get().isBlackProcess()) {
+                    return method.invoke(who, args);
+                }
+                String hostPkg = BlackBoxCore.getHostPkg();
+                if (args != null) {
+                    for (int i = 0; i < args.length; i++) {
+                        if (args[i] != null) {
+                            fixGmsFields(args[i], hostPkg);
+                        }
+                    }
+                }
                 return method.invoke(who, args);
-            } catch (Exception e) {
+            } catch (Throwable e) {
+                if (e instanceof java.lang.reflect.InvocationTargetException) {
+                    Throwable cause = ((java.lang.reflect.InvocationTargetException) e).getTargetException();
+                    if (cause instanceof SecurityException) {
+                        Slog.e(TAG, "GmsProxy SecurityException in getServiceBroker: " + cause.getMessage());
+                        throw cause;
+                    }
+                }
                 Slog.e(TAG, "GmsProxy: Error in getServiceBroker", e);
-                
                 return null;
             }
         }

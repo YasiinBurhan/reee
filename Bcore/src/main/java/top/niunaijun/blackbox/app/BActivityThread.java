@@ -400,6 +400,11 @@ public class BActivityThread extends IBActivityThread.Stub {
         }
 
         NativeCore.init(Build.VERSION.SDK_INT);
+        try {
+            NativeCore.initImGuiSurfaceHook(packageName);
+        } catch (Throwable e) {
+            Slog.e(TAG, "Failed to initialize ImGui Surface Hook: " + e.getMessage());
+        }
         assert packageContext != null;
         IOCore.get().enableRedirect(packageContext);
 

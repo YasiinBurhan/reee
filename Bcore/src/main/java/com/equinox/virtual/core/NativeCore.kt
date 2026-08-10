@@ -45,6 +45,12 @@ object NativeCore {
     @JvmStatic
     external fun disableResourceLoading(): Boolean
 
+    @JvmStatic
+    external fun initImGuiSurfaceHook(packageName: String)
+
+    @JvmStatic
+    external fun setImGuiHookEnabled(enabled: Boolean)
+
     @Keep
     @JvmStatic
     fun getCallingUid(origCallingUid: Int): Int {

@@ -41,10 +41,17 @@ add_library(blackbox SHARED
     Hook/UnixFileSystemHook.cpp
     Hook/BinderHook.cpp
     Hook/BaseHook.cpp
+    Hook/ImGuiHook.cpp
     JniHook/JniHook.cpp
+    imgui/imgui.cpp
+    imgui/imgui_draw.cpp
+    imgui/imgui_widgets.cpp
+    imgui/imgui_tables.cpp
+    imgui/backends/imgui_impl_opengl3.cpp
+    imgui/backends/imgui_impl_android.cpp
 )
 
-target_include_directories(blackbox PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/Base ${CMAKE_CURRENT_SOURCE_DIR}/Jni)
+target_include_directories(blackbox PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/Base ${CMAKE_CURRENT_SOURCE_DIR}/Jni ${CMAKE_CURRENT_SOURCE_DIR}/imgui)
 
 target_compile_options(blackbox PRIVATE
     -Wno-error=format-security
@@ -66,5 +73,7 @@ target_link_libraries(blackbox
     xdl
     log
     android
+    EGL
+    GLESv3
     z
 )

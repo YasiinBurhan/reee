@@ -4,11 +4,26 @@
 #include <jni.h>
 #include <JniHook/JniHook.h>
 #include <Hook/VMClassLoaderHook.h>
+#include <Hook/ImGuiHook.h>
 #include "hidden_api.h"
 
 #include <string>
 
 extern "C" {
+
+JNIEXPORT void JNICALL
+Java_com_equinox_virtual_core_NativeCore_initImGuiSurfaceHook(JNIEnv *env, jclass clazz, jstring package_name) {
+    const char *pkg = env->GetStringUTFChars(package_name, JNI_FALSE);
+    ALOGD("Initializing ImGui surface hook for: %s", pkg);
+    ImGuiHook::init(pkg);
+    env->ReleaseStringUTFChars(package_name, pkg);
+}
+
+JNIEXPORT void JNICALL
+Java_com_equinox_virtual_core_NativeCore_setImGuiHookEnabled(JNIEnv *env, jclass clazz, jboolean enabled) {
+    ALOGD("Setting ImGui surface hook enabled: %d", enabled);
+    ImGuiHook::setEnabled(enabled);
+}
 
 JNIEXPORT void JNICALL
 Java_com_equinox_virtual_core_NativeCore_hideXposed(JNIEnv *env, jclass clazz) {

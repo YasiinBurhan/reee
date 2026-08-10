@@ -141,15 +141,8 @@ class EQuinoxApp : Application() {
     override fun onCreate() {
         super.onCreate()
         
-        // Always ensure Firebase is initialized in all processes
-        try {
-            initFirebase(this)
-        } catch (e: Exception) {
-            Log.e(TAG, "FirebaseApp initialize error: ${e.message}")
-        }
-
-        val isMain = try {
-            val currentProcess = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+        val processName = try {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
                 android.app.Application.getProcessName()
             } else {
                 try {
@@ -162,18 +155,27 @@ class EQuinoxApp : Application() {
                 } ?: try {
                     val file = java.io.File("/proc/self/cmdline")
                     val reader = java.io.BufferedReader(java.io.FileReader(file))
-                    val name = reader.readLine()?.trim()
+                    val name = reader.readLine()?.trim { it <= ' ' }
                     reader.close()
                     name
                 } catch (e: Exception) {
                     null
                 } ?: packageName
             }
-            !currentProcess.contains(":")
         } catch (e: Exception) {
-            true
+            packageName
         }
+
+        val isMain = processName == packageName || !processName.contains(":")
+
         if (isMain) {
+            // Initialize Firebase only in main process
+            try {
+                initFirebase(this)
+            } catch (e: Exception) {
+                Log.e(TAG, "FirebaseApp initialize error in main: ${e.message}")
+            }
+
             try {
                 com.equinox.virtual.core.VirtualSpoof.initSpoof()
             } catch (e: Throwable) {
