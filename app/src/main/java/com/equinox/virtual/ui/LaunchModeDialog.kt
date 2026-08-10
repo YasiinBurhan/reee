@@ -49,7 +49,7 @@ fun LaunchModeDialog(
     val context = LocalContext.current
     val sp = remember { context.getSharedPreferences("equinox_settings", android.content.Context.MODE_PRIVATE) }
     var directStorage by remember { mutableStateOf(sp.getBoolean("direct_storage_${app.packageName}", false)) }
-    var selectedModMode by remember { mutableStateOf(false) } // false = Buka Normal, true = Buka dengan MenuMod
+    var selectedModMode by remember { mutableStateOf(true) } // true = Buka dengan MenuMod (Default), false = Buka Normal
 
     AlertDialog(
         onDismissRequest = onDismissRequest,

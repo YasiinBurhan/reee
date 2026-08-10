@@ -12,16 +12,16 @@
 extern "C" {
 
 JNIEXPORT void JNICALL
-Java_com_equinox_virtual_core_NativeCore_initImGuiSurfaceHook(JNIEnv *env, jclass clazz, jstring package_name) {
+Java_com_equinox_virtual_core_NativeCore_initMenuModSurfaceHook(JNIEnv *env, jclass clazz, jstring package_name) {
     const char *pkg = env->GetStringUTFChars(package_name, JNI_FALSE);
-    ALOGD("Initializing ImGui surface hook for: %s", pkg);
+    ALOGD("Initializing MenuMod surface hook for: %s", pkg);
     ImGuiHook::init(pkg);
     env->ReleaseStringUTFChars(package_name, pkg);
 }
 
 JNIEXPORT void JNICALL
-Java_com_equinox_virtual_core_NativeCore_setImGuiHookEnabled(JNIEnv *env, jclass clazz, jboolean enabled) {
-    ALOGD("Setting ImGui surface hook enabled: %d", enabled);
+Java_com_equinox_virtual_core_NativeCore_setMenuModHookEnabled(JNIEnv *env, jclass clazz, jboolean enabled) {
+    ALOGD("Setting MenuMod surface hook enabled: %d", enabled);
     ImGuiHook::setEnabled(enabled);
 }
 

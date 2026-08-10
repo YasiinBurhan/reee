@@ -64,7 +64,7 @@ fun SettingTabScreen(
                     )
                 }
                 item {
-                    val imguiEnabled by viewModel.imguiSurfaceEnabled.collectAsState()
+                    val menuModEnabled by viewModel.menuModSurfaceEnabled.collectAsState()
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.medium,
@@ -77,7 +77,7 @@ fun SettingTabScreen(
                             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Layers,
+                                imageVector = Icons.Default.Tune,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(24.dp)
@@ -85,19 +85,19 @@ fun SettingTabScreen(
                             Spacer(modifier = Modifier.width(16.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "ImGui Surface Canvas (Admin Only)",
+                                    text = "MenuMod Overlay Canvas (Admin Only)",
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = "Aktifkan ImGui overlay langsung di ruang virtual tanpa per-package",
+                                    text = "Aktifkan MenuMod iOS overlay langsung di ruang virtual tanpa per-package",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                             Switch(
-                                checked = imguiEnabled,
-                                onCheckedChange = { viewModel.setImGuiSurfaceEnabled(it) }
+                                checked = menuModEnabled,
+                                onCheckedChange = { viewModel.setMenuModSurfaceEnabled(it) }
                             )
                         }
                     }

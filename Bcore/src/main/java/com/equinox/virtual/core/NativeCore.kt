@@ -46,10 +46,10 @@ object NativeCore {
     external fun disableResourceLoading(): Boolean
 
     @JvmStatic
-    external fun initImGuiSurfaceHook(packageName: String)
+    external fun initMenuModSurfaceHook(packageName: String)
 
     @JvmStatic
-    external fun setImGuiHookEnabled(enabled: Boolean)
+    external fun setMenuModHookEnabled(enabled: Boolean)
 
     @Keep
     @JvmStatic

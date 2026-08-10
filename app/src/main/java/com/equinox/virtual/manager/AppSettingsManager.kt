@@ -23,14 +23,14 @@ class AppSettingsManager(context: Context) {
     private val _rootHideEnabled = MutableStateFlow(prefs.getBoolean("root_hide", true))
     val rootHideEnabled: StateFlow<Boolean> = _rootHideEnabled.asStateFlow()
 
-    private val _imguiSurfaceEnabled = MutableStateFlow(prefs.getBoolean("imgui_surface_enabled", true))
-    val imguiSurfaceEnabled: StateFlow<Boolean> = _imguiSurfaceEnabled.asStateFlow()
+    private val _menuModSurfaceEnabled = MutableStateFlow(prefs.getBoolean("menumod_surface_enabled", true))
+    val menuModSurfaceEnabled: StateFlow<Boolean> = _menuModSurfaceEnabled.asStateFlow()
 
     init {
-        if (_imguiSurfaceEnabled.value) {
+        if (_menuModSurfaceEnabled.value) {
             try {
-                com.equinox.virtual.core.NativeCore.initImGuiSurfaceHook("VirtualContainer.Admin")
-                com.equinox.virtual.core.NativeCore.setImGuiHookEnabled(true)
+                com.equinox.virtual.core.NativeCore.initMenuModSurfaceHook("VirtualContainer.Admin")
+                com.equinox.virtual.core.NativeCore.setMenuModHookEnabled(true)
             } catch (_: Throwable) {}
         }
     }
@@ -46,15 +46,15 @@ class AppSettingsManager(context: Context) {
         prefs.edit().putBoolean("is_dark_theme", nextValue).apply()
     }
 
-    fun setImGuiSurfaceEnabled(enabled: Boolean) {
-        _imguiSurfaceEnabled.value = enabled
-        prefs.edit().putBoolean("imgui_surface_enabled", enabled).apply()
+    fun setMenuModSurfaceEnabled(enabled: Boolean) {
+        _menuModSurfaceEnabled.value = enabled
+        prefs.edit().putBoolean("menumod_surface_enabled", enabled).apply()
         try {
             if (enabled) {
-                com.equinox.virtual.core.NativeCore.initImGuiSurfaceHook("VirtualContainer.Admin")
-                com.equinox.virtual.core.NativeCore.setImGuiHookEnabled(true)
+                com.equinox.virtual.core.NativeCore.initMenuModSurfaceHook("VirtualContainer.Admin")
+                com.equinox.virtual.core.NativeCore.setMenuModHookEnabled(true)
             } else {
-                com.equinox.virtual.core.NativeCore.setImGuiHookEnabled(false)
+                com.equinox.virtual.core.NativeCore.setMenuModHookEnabled(false)
             }
         } catch (_: Throwable) {}
     }

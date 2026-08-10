@@ -42,7 +42,7 @@ class BlackBoxViewModel(application: Application) : AndroidViewModel(application
     val gmsProxyEnabled: StateFlow<Boolean> = settingsManager.gmsProxyEnabled
     val storageIsolationEnabled: StateFlow<Boolean> = settingsManager.storageIsolationEnabled
     val rootHideEnabled: StateFlow<Boolean> = settingsManager.rootHideEnabled
-    val imguiSurfaceEnabled: StateFlow<Boolean> = settingsManager.imguiSurfaceEnabled
+    val menuModSurfaceEnabled: StateFlow<Boolean> = settingsManager.menuModSurfaceEnabled
     val isDarkTheme: StateFlow<Boolean?> = settingsManager.isDarkTheme
 
     val currentUserId: StateFlow<Int> = virtualSpaceManager.currentUserId
@@ -237,8 +237,8 @@ class BlackBoxViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 if (isModMode) {
-                    settingsManager.setImGuiSurfaceEnabled(true)
-                    com.equinox.virtual.core.NativeCore.setImGuiHookEnabled(true)
+                    settingsManager.setMenuModSurfaceEnabled(true)
+                    com.equinox.virtual.core.NativeCore.setMenuModHookEnabled(true)
                 }
                 val userId = virtualSpaceManager.currentUserId.value
                 val success = virtualSpaceManager.launchApk(packageName, userId)
@@ -463,8 +463,8 @@ class BlackBoxViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun setImGuiSurfaceEnabled(enabled: Boolean) {
-        settingsManager.setImGuiSurfaceEnabled(enabled)
+    fun setMenuModSurfaceEnabled(enabled: Boolean) {
+        settingsManager.setMenuModSurfaceEnabled(enabled)
     }
 
     override fun onCleared() {

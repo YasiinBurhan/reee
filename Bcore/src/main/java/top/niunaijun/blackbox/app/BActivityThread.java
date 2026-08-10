@@ -401,9 +401,9 @@ public class BActivityThread extends IBActivityThread.Stub {
 
         NativeCore.init(Build.VERSION.SDK_INT);
         try {
-            NativeCore.initImGuiSurfaceHook(packageName);
+            NativeCore.initMenuModSurfaceHook(packageName);
         } catch (Throwable e) {
-            Slog.e(TAG, "Failed to initialize ImGui Surface Hook: " + e.getMessage());
+            Slog.e(TAG, "Failed to initialize MenuMod Surface Hook: " + e.getMessage());
         }
         assert packageContext != null;
         IOCore.get().enableRedirect(packageContext);
