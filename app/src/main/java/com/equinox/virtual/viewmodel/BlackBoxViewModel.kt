@@ -42,6 +42,7 @@ class BlackBoxViewModel(application: Application) : AndroidViewModel(application
     val gmsProxyEnabled: StateFlow<Boolean> = settingsManager.gmsProxyEnabled
     val storageIsolationEnabled: StateFlow<Boolean> = settingsManager.storageIsolationEnabled
     val rootHideEnabled: StateFlow<Boolean> = settingsManager.rootHideEnabled
+    val imguiSurfaceEnabled: StateFlow<Boolean> = settingsManager.imguiSurfaceEnabled
     val isDarkTheme: StateFlow<Boolean?> = settingsManager.isDarkTheme
 
     val currentUserId: StateFlow<Int> = virtualSpaceManager.currentUserId
@@ -235,10 +236,15 @@ class BlackBoxViewModel(application: Application) : AndroidViewModel(application
     fun launchVirtualApp(packageName: String, isModMode: Boolean = false) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
+                if (isModMode) {
+                    settingsManager.setImGuiSurfaceEnabled(true)
+                    com.equinox.virtual.core.NativeCore.setImGuiHookEnabled(true)
+                }
                 val userId = virtualSpaceManager.currentUserId.value
                 val success = virtualSpaceManager.launchApk(packageName, userId)
                 if (success) {
-                    _snackbarMessage.emit("Membuka $packageName (Mode Normal)...")
+                    val modeLabel = if (isModMode) "Mode MenuMod" else "Mode Normal"
+                    _snackbarMessage.emit("Membuka $packageName ($modeLabel)...")
                 } else {
                     _snackbarMessage.emit("Gagal membuka $packageName")
                 }
@@ -455,6 +461,10 @@ class BlackBoxViewModel(application: Application) : AndroidViewModel(application
                 _isLoading.value = false
             }
         }
+    }
+
+    fun setImGuiSurfaceEnabled(enabled: Boolean) {
+        settingsManager.setImGuiSurfaceEnabled(enabled)
     }
 
     override fun onCleared() {

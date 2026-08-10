@@ -1,5 +1,7 @@
 package com.equinox.virtual.ui
 
+import com.equinox.virtual.menu.ImGuiOverlayHUD
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -97,6 +99,7 @@ fun BlackBoxMainScreen(
     val gmsProxyEnabled by viewModel.gmsProxyEnabled.collectAsState()
     val storageIsolationEnabled by viewModel.storageIsolationEnabled.collectAsState()
     val rootHideEnabled by viewModel.rootHideEnabled.collectAsState()
+    val imguiSurfaceEnabled by viewModel.imguiSurfaceEnabled.collectAsState()
     val currentUserSession by viewModel.currentUserSession.collectAsState()
     val expiryTime by viewModel.expiryTime.collectAsState()
     val isDarkThemePref by viewModel.isDarkTheme.collectAsState()
@@ -384,4 +387,10 @@ fun BlackBoxMainScreen(
             }
         )
     }
+
+    ImGuiOverlayHUD(
+        enabled = imguiSurfaceEnabled,
+        userRole = userRole,
+        onClose = { viewModel.setImGuiSurfaceEnabled(false) }
+    )
 }

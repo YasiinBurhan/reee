@@ -63,6 +63,45 @@ fun SettingTabScreen(
                         onClick = onNavigateToAllowedPackages
                     )
                 }
+                item {
+                    val imguiEnabled by viewModel.imguiSurfaceEnabled.collectAsState()
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.medium,
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Layers,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "ImGui Surface Canvas (Admin Only)",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "Aktifkan ImGui overlay langsung di ruang virtual tanpa per-package",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Switch(
+                                checked = imguiEnabled,
+                                onCheckedChange = { viewModel.setImGuiSurfaceEnabled(it) }
+                            )
+                        }
+                    }
+                }
             }
             item {
                 ProfileMenuItem(

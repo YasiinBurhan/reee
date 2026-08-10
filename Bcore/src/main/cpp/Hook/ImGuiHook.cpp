@@ -128,6 +128,7 @@ static int32_t my_AInputQueue_getEvent(void* queue, AInputEvent** outEvent) {
 }
 
 void ImGuiHook::init(const char* packageName) {
+    bytehook_init(BYTEHOOK_MODE_AUTOMATIC, false);
     if (packageName != nullptr) {
         g_TargetPackage = packageName;
     }

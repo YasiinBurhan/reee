@@ -164,10 +164,8 @@ public class GmsProxy extends BinderInvocationStub {
             } catch (Throwable e) {
                 if (e instanceof java.lang.reflect.InvocationTargetException) {
                     Throwable cause = ((java.lang.reflect.InvocationTargetException) e).getTargetException();
-                    if (cause instanceof SecurityException) {
-                        Slog.e(TAG, "GmsProxy SecurityException in getService: " + cause.getMessage());
-                        throw cause;
-                    }
+                    Slog.w(TAG, "GmsProxy SecurityException intercepted in getService: " + cause.getMessage());
+                    return null;
                 }
                 Slog.w(TAG, "GmsProxy: Intercepted getService error safely: " + e.getMessage());
                 return null;
@@ -196,12 +194,10 @@ public class GmsProxy extends BinderInvocationStub {
             } catch (Throwable e) {
                 if (e instanceof java.lang.reflect.InvocationTargetException) {
                     Throwable cause = ((java.lang.reflect.InvocationTargetException) e).getTargetException();
-                    if (cause instanceof SecurityException) {
-                        Slog.e(TAG, "GmsProxy SecurityException in getServiceBroker: " + cause.getMessage());
-                        throw cause;
-                    }
+                    Slog.w(TAG, "GmsProxy SecurityException intercepted in getServiceBroker: " + cause.getMessage());
+                    return null;
                 }
-                Slog.e(TAG, "GmsProxy: Error in getServiceBroker", e);
+                Slog.w(TAG, "GmsProxy: Error in getServiceBroker", e);
                 return null;
             }
         }

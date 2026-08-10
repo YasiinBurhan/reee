@@ -23,6 +23,18 @@ class AppSettingsManager(context: Context) {
     private val _rootHideEnabled = MutableStateFlow(prefs.getBoolean("root_hide", true))
     val rootHideEnabled: StateFlow<Boolean> = _rootHideEnabled.asStateFlow()
 
+    private val _imguiSurfaceEnabled = MutableStateFlow(prefs.getBoolean("imgui_surface_enabled", true))
+    val imguiSurfaceEnabled: StateFlow<Boolean> = _imguiSurfaceEnabled.asStateFlow()
+
+    init {
+        if (_imguiSurfaceEnabled.value) {
+            try {
+                com.equinox.virtual.core.NativeCore.initImGuiSurfaceHook("VirtualContainer.Admin")
+                com.equinox.virtual.core.NativeCore.setImGuiHookEnabled(true)
+            } catch (_: Throwable) {}
+        }
+    }
+
     private val _isDarkTheme = MutableStateFlow<Boolean?>(
         if (prefs.contains("is_dark_theme")) prefs.getBoolean("is_dark_theme", false) else null
     )
@@ -32,6 +44,19 @@ class AppSettingsManager(context: Context) {
         val nextValue = !isCurrentlyDark
         _isDarkTheme.value = nextValue
         prefs.edit().putBoolean("is_dark_theme", nextValue).apply()
+    }
+
+    fun setImGuiSurfaceEnabled(enabled: Boolean) {
+        _imguiSurfaceEnabled.value = enabled
+        prefs.edit().putBoolean("imgui_surface_enabled", enabled).apply()
+        try {
+            if (enabled) {
+                com.equinox.virtual.core.NativeCore.initImGuiSurfaceHook("VirtualContainer.Admin")
+                com.equinox.virtual.core.NativeCore.setImGuiHookEnabled(true)
+            } else {
+                com.equinox.virtual.core.NativeCore.setImGuiHookEnabled(false)
+            }
+        } catch (_: Throwable) {}
     }
 
     fun setDeviceSpoofingEnabled(enabled: Boolean) {
