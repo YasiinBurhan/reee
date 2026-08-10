@@ -6,6 +6,7 @@ import android.util.Log
 import com.equinox.virtual.EQuinoxApp
 import com.equinox.virtual.model.FirestoreUser
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -42,11 +43,31 @@ class AuthAndUserManager(
 
     fun getFirestoreDb(): FirebaseFirestore {
         val app = EQuinoxApp.initFirebase(application)
-        return if (app != null) {
-            FirebaseFirestore.getInstance(app)
-        } else {
+        
+        val db = try {
+            if (app != null) {
+                FirebaseFirestore.getInstance(app)
+            } else {
+                FirebaseFirestore.getInstance()
+            }
+        } catch (e: Exception) {
+            Log.e("AuthAndUserManager", "CRITICAL: Could not get Firestore instance: ${e.message}")
+            // Fallback: try initializing Firebase one more time manually
+            EQuinoxApp.initFirebase(application)
             FirebaseFirestore.getInstance()
         }
+        
+        try {
+            // Disable persistence to avoid ashmem/SQLite issues in virtual spaces
+            val settings = FirebaseFirestoreSettings.Builder()
+                .setPersistenceEnabled(false)
+                .build()
+            db.firestoreSettings = settings
+        } catch (e: Exception) {
+            Log.w("AuthAndUserManager", "Failed to set Firestore settings: ${e.message}")
+        }
+        
+        return db
     }
 
     fun listenToCurrentUserSession(
@@ -274,6 +295,11 @@ class AuthAndUserManager(
                     onResult(false, "Gagal terhubung ke server: ${e.message}")
                     android.widget.Toast.makeText(application, "Firestore Error: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
                 }
+        } catch (e: SecurityException) {
+            Log.e("AuthAndUserManager", "SecurityException in authenticateDevice: ${e.message}", e)
+            _isCheckingSession.value = false
+            onResult(false, "Sistem Keamanan Menolak: ${e.message}")
+            android.widget.Toast.makeText(application, "Security Error: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
         } catch (e: Exception) {
             Log.e("AuthAndUserManager", "Critical error in authenticateDevice: ${e.message}", e)
             _isCheckingSession.value = false

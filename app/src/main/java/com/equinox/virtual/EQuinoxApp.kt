@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.util.Log
 import com.google.firebase.FirebaseApp
+import com.google.firebase.FirebaseOptions
 import top.niunaijun.blackbox.BlackBoxCore
 import top.niunaijun.blackbox.app.configuration.ClientConfiguration
 import java.io.File
@@ -18,81 +19,44 @@ class EQuinoxApp : Application() {
 
         fun initFirebase(context: Context): FirebaseApp? {
             val appContext = context.applicationContext ?: context
+            
+            // 1. Check if already initialized
             try {
-                if (FirebaseApp.getApps(appContext).isNotEmpty()) {
+                val apps = FirebaseApp.getApps(appContext)
+                if (apps.isNotEmpty()) {
                     return FirebaseApp.getInstance()
                 }
-            } catch (e: Throwable) {
-                Log.w(TAG, "getApps check warning: ${e.message}")
+            } catch (e: Exception) {
+                Log.w(TAG, "Error checking for existing Firebase apps: ${e.message}")
             }
 
-            android.widget.Toast.makeText(appContext, "Initializing Firebase...", android.widget.Toast.LENGTH_SHORT).show()
-
+            // 2. Try standard initialization (using google-services.json values)
             try {
-                return FirebaseApp.getInstance()
-            } catch (e: Throwable) {
-                // Not initialized yet
+                val app = FirebaseApp.initializeApp(appContext)
+                if (app != null) {
+                    Log.d(TAG, "Standard Firebase initialization succeeded")
+                    return app
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Standard Firebase initialization failed: ${e.message}")
             }
-
+            
+            // 3. Fallback to manual options as a LAST RESORT
             try {
-                return FirebaseApp.initializeApp(appContext)
-            } catch (e: Throwable) {
-                Log.w(TAG, "FirebaseApp auto initialize (appContext) failed (${e.message}), trying direct context...")
-            }
-
-            try {
-                return FirebaseApp.initializeApp(context)
-            } catch (e: Throwable) {
-                Log.w(TAG, "FirebaseApp auto initialize (context) failed (${e.message}), attempting manual fallback...")
-            }
-
-            val options = try {
-                com.google.firebase.FirebaseOptions.Builder()
+                Log.d(TAG, "Attempting manual Firebase fallback...")
+                val options = FirebaseOptions.Builder()
                     .setApplicationId("1:16158272696:android:96098a8fe11315125a984d")
                     .setApiKey("AIzaSyDm1ReFVcxRn_vU3NPt1_GLtJZ4kP1v7AE")
                     .setProjectId("equinox-28026")
                     .setStorageBucket("equinox-28026.firebasestorage.app")
                     .setGcmSenderId("16158272696")
                     .build()
-            } catch (e: Throwable) {
-                Log.e(TAG, "Failed to build FirebaseOptions: ${e.message}")
-                null
-            }
-
-            if (options != null) {
-                android.widget.Toast.makeText(appContext, "Attempting manual Firebase config...", android.widget.Toast.LENGTH_SHORT).show()
-                try {
-                    return FirebaseApp.initializeApp(appContext, options)
-                } catch (e: Throwable) {
-                    if (e.message?.contains("already exists", ignoreCase = true) == true) {
-                        try {
-                            return FirebaseApp.getInstance()
-                        } catch (ex: Throwable) {
-                            // ignore
-                        }
-                    }
-                    Log.w(TAG, "FirebaseApp manual initialize (appContext) error: ${e.message}")
-                }
-
-                try {
-                    return FirebaseApp.initializeApp(context, options)
-                } catch (e: Throwable) {
-                    if (e.message?.contains("already exists", ignoreCase = true) == true) {
-                        try {
-                            return FirebaseApp.getInstance()
-                        } catch (ex: Throwable) {
-                            // ignore
-                        }
-                    }
-                    Log.e(TAG, "FirebaseApp manual initialize (context) error: ${e.message}")
-                }
-            }
-
-            return try {
-                FirebaseApp.getInstance()
-            } catch (e: Throwable) {
-                Log.e(TAG, "FirebaseApp final fallback getInstance failed: ${e.message}")
-                null
+                
+                // Initialize as the default app explicitly if it's not already
+                return FirebaseApp.initializeApp(appContext, options)
+            } catch (ex: Exception) {
+                Log.e(TAG, "ALL Firebase initialization attempts failed: ${ex.message}")
+                return null
             }
         }
 
@@ -117,6 +81,13 @@ class EQuinoxApp : Application() {
     override fun attachBaseContext(base: Context?) {
         super.attachBaseContext(base)
         instance = this
+        // Ensure Firebase is initialized as early as possible
+        try {
+            initFirebase(this)
+        } catch (e: Exception) {
+            Log.e(TAG, "Early Firebase init failed: ${e.message}")
+        }
+        
         try {
             BlackBoxCore.get().closeCodeInit()
         } catch (e: Exception) {
@@ -169,6 +140,14 @@ class EQuinoxApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        
+        // Always ensure Firebase is initialized in all processes
+        try {
+            initFirebase(this)
+        } catch (e: Exception) {
+            Log.e(TAG, "FirebaseApp initialize error: ${e.message}")
+        }
+
         val isMain = try {
             val currentProcess = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
                 android.app.Application.getProcessName()
@@ -195,11 +174,6 @@ class EQuinoxApp : Application() {
             true
         }
         if (isMain) {
-            try {
-                initFirebase(this)
-            } catch (e: Exception) {
-                Log.e(TAG, "FirebaseApp initialize error: ${e.message}")
-            }
             try {
                 com.equinox.virtual.core.VirtualSpoof.initSpoof()
             } catch (e: Throwable) {

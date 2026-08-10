@@ -50,4 +50,20 @@
 -dontwarn com.google.protobuf.**
 -dontwarn javax.annotation.**
 
+# Firebase
+-keep class com.google.firebase.** { *; }
+-keep class com.google.android.gms.** { *; }
+-dontwarn com.google.firebase.**
+-dontwarn com.google.android.gms.**
+
+# BlackBox
+-keep class top.niunaijun.blackbox.** { *; }
+-keep class com.equinox.virtual.** { *; }
+-keep interface top.niunaijun.blackbox.** { *; }
+-dontwarn top.niunaijun.blackbox.**
+
+# Keep models
+-keep class com.equinox.virtual.model.** { *; }
+-keepclassmembers class com.equinox.virtual.model.** { *; }
+
 -dontwarn java.lang.invoke.**
