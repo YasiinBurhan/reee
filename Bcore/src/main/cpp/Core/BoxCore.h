@@ -1,9 +1,11 @@
-#ifndef VIRTUALM_VMCORE_H
-#define VIRTUALM_VMCORE_H
+#ifndef BLACKBOX_BOXCORE_H
+#define BLACKBOX_BOXCORE_H
 
 #include <jni.h>
 
 #define VMCORE_CLASS "com/equinox/virtual/core/NativeCore"
+
+namespace blackbox {
 
 class BoxCore {
 public:
@@ -28,4 +30,6 @@ public:
     static jlongArray loadEmptyDex(JNIEnv *env);
 };
 
-#endif // VIRTUALM_VMCORE_H
+} // namespace blackbox
+
+#endif // BLACKBOX_BOXCORE_H

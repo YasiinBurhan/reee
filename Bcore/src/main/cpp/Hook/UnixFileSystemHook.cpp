@@ -1,30 +1,25 @@
-
-
-
-
-#include <IO.h>
+#include <Base/IO.h>
 #include "UnixFileSystemHook.h"
-#import "JniHook/JniHook.h"
+#include <JniHook/JniHook.h>
 #include "BaseHook.h"
+#include "Log.h"
 
+namespace blackbox {
 
 HOOK_JNI(jstring, canonicalize0, JNIEnv *env, jobject obj, jstring path) {
     jstring redirect = IO::redirectPath(env, path);
     return orig_canonicalize0(env, obj, redirect);
 }
 
-
 HOOK_JNI(jint, getBooleanAttributes0, JNIEnv *env, jobject obj, jstring abspath) {
     jstring redirect = IO::redirectPath(env, abspath);
     return orig_getBooleanAttributes0(env, obj, redirect);
 }
 
-
 HOOK_JNI(jlong, getLastModifiedTime0, JNIEnv *env, jobject obj, jobject path) {
     jobject redirect = IO::redirectPath(env, path);
     return orig_getLastModifiedTime0(env, obj, redirect);
 }
-
 
 HOOK_JNI(jboolean, setPermission0, JNIEnv *env, jobject obj, jobject file, jint access,
          jboolean enable, jboolean owneronly) {
@@ -32,36 +27,30 @@ HOOK_JNI(jboolean, setPermission0, JNIEnv *env, jobject obj, jobject file, jint 
     return orig_setPermission0(env, obj, redirect, access, enable, owneronly);
 }
 
-
 HOOK_JNI(jboolean, createFileExclusively0, JNIEnv *env, jobject obj, jstring path) {
     jstring redirect = IO::redirectPath(env, path);
     return orig_createFileExclusively0(env, obj, redirect);
 }
-
 
 HOOK_JNI(jobjectArray, list0, JNIEnv *env, jobject obj, jobject file) {
     jobject redirect = IO::redirectPath(env, file);
     return orig_list0(env, obj, redirect);
 }
 
-
 HOOK_JNI(jboolean, createDirectory0, JNIEnv *env, jobject obj, jobject path) {
     jobject redirect = IO::redirectPath(env, path);
     return orig_createDirectory0(env, obj, redirect);
 }
-
 
 HOOK_JNI(jboolean, setLastModifiedTime0, JNIEnv *env, jobject obj, jobject file, jobject time) {
     jobject redirect = IO::redirectPath(env, file);
     return orig_setLastModifiedTime0(env, obj, redirect, time);
 }
 
-
 HOOK_JNI(jboolean, setReadOnly0, JNIEnv *env, jobject obj, jobject file) {
     jobject redirect = IO::redirectPath(env, file);
     return orig_setReadOnly0(env, obj, redirect);
 }
-
 
 HOOK_JNI(jboolean, getSpace0, JNIEnv *env, jobject obj, jobject file, jint t) {
     jobject redirect = IO::redirectPath(env, file);
@@ -71,18 +60,12 @@ HOOK_JNI(jboolean, getSpace0, JNIEnv *env, jobject obj, jobject file, jint t) {
 void UnixFileSystemHook::init(JNIEnv *env) {
     const char *className = "java/io/UnixFileSystem";
     
-    
     try {
         JniHook::HookJniFun(env, className, "canonicalize0", "(Ljava/lang/String;)Ljava/lang/String;",
                             (void *) new_canonicalize0, (void **) (&orig_canonicalize0), false);
     } catch (...) {
         ALOGD("UnixFileSystemHook: Failed to hook canonicalize0, continuing without it");
     }
-    
-
-
-
-    
     
     try {
         JniHook::HookJniFun(env, className, "getLastModifiedTime0", "(Ljava/io/File;)J",
@@ -143,3 +126,5 @@ void UnixFileSystemHook::init(JNIEnv *env) {
         ALOGD("UnixFileSystemHook: Failed to hook getSpace0, continuing without it");
     }
 }
+
+} // namespace blackbox

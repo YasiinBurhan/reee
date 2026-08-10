@@ -2,12 +2,14 @@
 #define VIRTUALM_BASEHOOK_H
 
 #include <jni.h>
-#include <Log.h>
+
+namespace blackbox {
 
 class BaseHook {
 public:
     static void init(JNIEnv *env);
 };
 
+} // namespace blackbox
 
-#endif 
+#endif // VIRTUALM_BASEHOOK_H

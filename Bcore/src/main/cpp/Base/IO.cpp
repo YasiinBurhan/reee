@@ -1,15 +1,15 @@
-
-
-
-
 #include "IO.h"
 #include "Log.h"
+#include <Core/BoxCore.h>
+#include <cstring>
+#include <list>
 
-jmethodID getAbsolutePathMethodId;
+namespace blackbox {
 
-list<IO::RelocateInfo> relocate_rule;
+static jmethodID getAbsolutePathMethodId;
+static std::list<IO::RelocateInfo> relocate_rule;
 
-char *replace(const char *str, const char *src, const char *dst) {
+static char *replace(const char *str, const char *src, const char *dst) {
     const char *pos = str;
     int count = 0;
     while ((pos = strstr(pos, src))) {
@@ -19,7 +19,7 @@ char *replace(const char *str, const char *src, const char *dst) {
 
     size_t result_len = strlen(str) + (strlen(dst) - strlen(src)) * count + 1;
     char *result = (char *) malloc(result_len);
-    memset(result, 0, strlen(result));
+    memset(result, 0, result_len);
 
     const char *left = str;
     const char *right = nullptr;
@@ -35,48 +35,41 @@ char *replace(const char *str, const char *src, const char *dst) {
 }
 
 const char *IO::redirectPath(const char *__path) {
-    
     if (strstr(__path, "resource-cache")) {
         ALOGD("Blocking resource-cache path: %s", __path);
         return "/dev/null";
     }
-    
     
     if (strstr(__path, "@idmap")) {
         ALOGD("Blocking idmap path: %s", __path);
         return "/dev/null";
     }
     
-    
     if (strstr(__path, "systemui") && (strstr(__path, ".frro") || strstr(__path, "-accent-") || strstr(__path, "-dynamic-") || strstr(__path, "-neutral-"))) {
         ALOGD("Blocking systemui problematic path: %s", __path);
         return "/dev/null";
     }
-    
     
     if (strstr(__path, "data@resource-cache@")) {
         ALOGD("Blocking data@resource-cache@ pattern: %s", __path);
         return "/dev/null";
     }
     
-    
     if (strstr(__path, ".frro")) {
         ALOGD("Blocking .frro file: %s", __path);
         return "/dev/null";
     }
-    
     
     if (strstr(__path, "systemui")) {
         ALOGD("Blocking systemui path: %s", __path);
         return "/dev/null";
     }
 
-    list<IO::RelocateInfo>::iterator iterator;
+    std::list<IO::RelocateInfo>::iterator iterator;
     for (iterator = relocate_rule.begin(); iterator != relocate_rule.end(); ++iterator) {
         IO::RelocateInfo info = *iterator;
         if (strstr(__path, info.targetPath) && !strstr(__path, "/blackbox/")) {
             char *ret = replace(__path, info.targetPath, info.relocatePath);
-            
             return ret;
         }
     }
@@ -84,20 +77,10 @@ const char *IO::redirectPath(const char *__path) {
 }
 
 jstring IO::redirectPath(JNIEnv *env, jstring path) {
-
-
-
-
     return BoxCore::redirectPathString(env, path);
 }
 
 jobject IO::redirectPath(JNIEnv *env, jobject path) {
-
-
-
-
-
-
     return BoxCore::redirectPathFile(env, path);
 }
 
@@ -112,3 +95,5 @@ void IO::init(JNIEnv *env) {
     jclass tmpFile = env->FindClass("java/io/File");
     getAbsolutePathMethodId = env->GetMethodID(tmpFile, "getAbsolutePath", "()Ljava/lang/String;");
 }
+
+} // namespace blackbox

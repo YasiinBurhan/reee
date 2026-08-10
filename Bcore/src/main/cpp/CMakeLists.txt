@@ -20,7 +20,7 @@ target_compile_options(xdl PRIVATE -fno-exceptions -fno-rtti -w)
 
 # blackbox shared library
 add_library(blackbox SHARED
-    BoxCore.cpp
+    Core/BoxCore.cpp
     Jni/JniBridge.cpp
     KittyMemory/KittyMemory.cpp
     KittyMemory/KittyScanner.cpp

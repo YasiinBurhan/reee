@@ -1,13 +1,11 @@
-
-
-
-
 #include <jni.h>
-#include <stdio.h>
+#include <cstdio>
 #include "HexDump.h"
 #include "Log.h"
 
-void HexDump(char *buf, int len, int addr) {
+namespace blackbox {
+
+void HexDump::dump(char *buf, int len, int addr) {
     int i, j, k;
     char binstr[80];
 
@@ -39,3 +37,5 @@ void HexDump(char *buf, int len, int addr) {
         ALOGE("%s\n", binstr);
     }
 }
+
+} // namespace blackbox

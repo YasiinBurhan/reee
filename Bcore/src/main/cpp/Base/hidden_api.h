@@ -1,10 +1,16 @@
-
 #ifndef BLACKBOX2_HIDDEN_API_H
 #define BLACKBOX2_HIDDEN_API_H
 
-#include "jni.h"
+#include <jni.h>
 
-bool disable_hidden_api(JNIEnv*);
-bool disable_resource_loading();
+namespace blackbox {
 
-#endif 
+class HiddenApi {
+public:
+    static bool disableHiddenApi(JNIEnv* env);
+    static bool disableResourceLoading();
+};
+
+} // namespace blackbox
+
+#endif // BLACKBOX2_HIDDEN_API_H

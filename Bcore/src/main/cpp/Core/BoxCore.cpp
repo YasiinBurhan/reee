@@ -11,6 +11,8 @@
 #include <cstdint>
 #include <string>
 
+namespace blackbox {
+
 // Initialize static members of BoxCore
 JavaVM *BoxCore::vm = nullptr;
 jclass BoxCore::NativeCoreClass = nullptr;
@@ -72,3 +74,5 @@ void BoxCore::nativeHook(JNIEnv *env) {
     BinderHook::init(env);
     DexFileHook::init(env);
 }
+
+} // namespace blackbox

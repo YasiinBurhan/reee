@@ -1,14 +1,9 @@
-
-
-
-
-
-
-
-
 #include <cstring>
 #include "VMClassLoaderHook.h"
-#import "JniHook/JniHook.h"
+#include <JniHook/JniHook.h>
+
+namespace blackbox {
+
 static bool hideXposedClass = false;
 
 HOOK_JNI(jobject, findLoadedClass, JNIEnv *env, jobject obj, jobject class_loader, jstring name) {
@@ -40,3 +35,5 @@ void VMClassLoaderHook::init(JNIEnv *env) {
 void VMClassLoaderHook::hideXposed() {
     hideXposedClass = true;
 }
+
+} // namespace blackbox
