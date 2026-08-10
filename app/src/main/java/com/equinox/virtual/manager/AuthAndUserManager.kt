@@ -182,6 +182,7 @@ class AuthAndUserManager(
         Log.d("AuthAndUserManager", "HWID: $currentDeviceHwid")
         
         try {
+            android.widget.Toast.makeText(application, "Menghubungkan ke server...", android.widget.Toast.LENGTH_SHORT).show()
             val db = getFirestoreDb()
             Log.d("AuthAndUserManager", "Firestore instance obtained")
             db.collection("users").document(currentDeviceHwid).get()
@@ -228,6 +229,7 @@ class AuthAndUserManager(
                             }
                         } else {
                             // New User Registration (Auto-register for now or handle trial)
+                            android.widget.Toast.makeText(application, "Mendaftarkan perangkat baru...", android.widget.Toast.LENGTH_SHORT).show()
                             val newUser = com.equinox.virtual.model.FirestoreUser(
                                 uid = currentDeviceHwid,
                                 role = "member",
@@ -270,11 +272,13 @@ class AuthAndUserManager(
                     Log.e("AuthAndUserManager", "Firestore get failure", e)
                     _isCheckingSession.value = false
                     onResult(false, "Gagal terhubung ke server: ${e.message}")
+                    android.widget.Toast.makeText(application, "Firestore Error: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
                 }
         } catch (e: Exception) {
             Log.e("AuthAndUserManager", "Critical error in authenticateDevice: ${e.message}", e)
             _isCheckingSession.value = false
             onResult(false, "Terjadi kesalahan sistem: ${e.message}")
+            android.widget.Toast.makeText(application, "System Error: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
         }
     }
 

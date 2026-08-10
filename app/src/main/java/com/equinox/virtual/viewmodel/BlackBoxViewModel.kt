@@ -366,6 +366,7 @@ class BlackBoxViewModel(application: Application) : AndroidViewModel(application
 
     fun authenticateDevice(onResult: (Boolean, String) -> Unit) {
         viewModelScope.launch {
+            android.widget.Toast.makeText(getApplication(), "Memulai autentikasi perangkat...", android.widget.Toast.LENGTH_SHORT).show()
             _isLoading.value = true
             authUserManager.authenticateDevice(
                 onRoleChanged = { roleDisplay ->

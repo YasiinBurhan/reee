@@ -26,6 +26,8 @@ class EQuinoxApp : Application() {
                 Log.w(TAG, "getApps check warning: ${e.message}")
             }
 
+            android.widget.Toast.makeText(appContext, "Initializing Firebase...", android.widget.Toast.LENGTH_SHORT).show()
+
             try {
                 return FirebaseApp.getInstance()
             } catch (e: Throwable) {
@@ -58,6 +60,7 @@ class EQuinoxApp : Application() {
             }
 
             if (options != null) {
+                android.widget.Toast.makeText(appContext, "Attempting manual Firebase config...", android.widget.Toast.LENGTH_SHORT).show()
                 try {
                     return FirebaseApp.initializeApp(appContext, options)
                 } catch (e: Throwable) {

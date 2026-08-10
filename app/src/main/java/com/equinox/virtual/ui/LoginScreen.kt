@@ -203,6 +203,7 @@ fun LoginScreen(
                         Button(
                             onClick = {
                                 viewModel.authenticateDevice { success, message ->
+                                    android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_LONG).show()
                                     scope.launch {
                                         snackbarHostState.showSnackbar(message)
                                     }
