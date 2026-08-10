@@ -5,6 +5,7 @@
 #include <android/native_window.h>
 #include <android/log.h>
 #include <mutex>
+#include <cstring>
 #include "bytehook.h"
 #include "imgui.h"
 #include "backends/imgui_impl_opengl3.h"
@@ -18,6 +19,30 @@ static bool g_RenderEnabled = true;
 static bool g_EngineInitialized = false;
 static std::string g_TargetAppPackage = "";
 static std::mutex g_EngineMutex;
+
+static EGLBoolean hook_eglSwapBuffers(EGLDisplay dpy, EGLSurface surface);
+
+static void* hook_eglGetProcAddress(const char* procname) {
+    BYTEHOOK_STACK_SCOPE();
+
+    if (procname != nullptr && strcmp(procname, "eglSwapBuffers") == 0) {
+        LOGD("eglGetProcAddress requested eglSwapBuffers -> redirecting to our hook");
+        return (void*)hook_eglSwapBuffers;
+    }
+
+    return BYTEHOOK_CALL_PREV(hook_eglGetProcAddress, procname);
+}
+
+static void* hook_dlsym(void* handle, const char* symbol) {
+    BYTEHOOK_STACK_SCOPE();
+
+    if (symbol != nullptr && strcmp(symbol, "eglSwapBuffers") == 0) {
+        LOGD("dlsym requested eglSwapBuffers -> redirecting to our hook");
+        return (void*)hook_eglSwapBuffers;
+    }
+
+    return BYTEHOOK_CALL_PREV(hook_dlsym, handle, symbol);
+}
 
 static EGLBoolean hook_eglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
     BYTEHOOK_STACK_SCOPE();
@@ -128,6 +153,8 @@ void ImGuiRenderEngine::init(const char* packageName) {
     LOGD("Initializing ImGuiRenderEngine ByteHook PLT Hooks for package: %s", g_TargetAppPackage.c_str());
 
     bytehook_hook_all(nullptr, "eglSwapBuffers", (void*)hook_eglSwapBuffers, nullptr, nullptr);
+    bytehook_hook_all(nullptr, "eglGetProcAddress", (void*)hook_eglGetProcAddress, nullptr, nullptr);
+    bytehook_hook_all(nullptr, "dlsym", (void*)hook_dlsym, nullptr, nullptr);
     bytehook_hook_all(nullptr, "AInputQueue_getEvent", (void*)hook_AInputQueue_getEvent, nullptr, nullptr);
 
     LOGD("ImGuiRenderEngine ByteHook PLT Hooks initialized successfully");
