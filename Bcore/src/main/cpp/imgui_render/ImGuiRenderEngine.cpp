@@ -71,10 +71,33 @@ static void* hook_dlsym(void* handle, const char* symbol) {
     return BYTEHOOK_CALL_PREV(hook_dlsym, handle, symbol);
 }
 
+static EGLContext g_CurrentContext = EGL_NO_CONTEXT;
+static int g_FrameCounter = 0;
+
 static void render_imgui_frame(EGLDisplay dpy, EGLSurface surface) {
     if (!g_RenderEnabled) return;
 
+    EGLContext ctx = eglGetCurrentContext();
+    if (ctx == EGL_NO_CONTEXT) {
+        return;
+    }
+
     std::lock_guard<std::mutex> lock(g_EngineMutex);
+
+    if (g_FrameCounter++ % 300 == 0) {
+        LOGD("render_imgui_frame is ALIVE on context %p", ctx);
+    }
+
+    if (g_CurrentContext != ctx) {
+        LOGD("EGL Context changed from %p to %p - Re-initializing ImGui backend", g_CurrentContext, ctx);
+        if (g_EngineInitialized) {
+            ImGui_ImplOpenGL3_Shutdown();
+            // We don't destroy context because it might be shared or reused in ways we don't want to break
+            // ImGui::DestroyContext(); 
+            g_EngineInitialized = false;
+        }
+        g_CurrentContext = ctx;
+    }
 
     EGLint width = 0, height = 0;
     eglQuerySurface(dpy, surface, EGL_WIDTH, &width);
@@ -83,42 +106,54 @@ static void render_imgui_frame(EGLDisplay dpy, EGLSurface surface) {
     if (width > 0 && height > 0) {
         if (!g_EngineInitialized) {
             IMGUI_CHECKVERSION();
-            ImGui::CreateContext();
-            ImGuiIO& io = ImGui::GetIO();
-            io.IniFilename = nullptr;
+            if (ImGui::GetCurrentContext() == nullptr) {
+                ImGui::CreateContext();
+                ImGuiIO& io = ImGui::GetIO();
+                io.IniFilename = nullptr;
 
-            ImGui::StyleColorsDark();
-            ImGuiStyle& style = ImGui::GetStyle();
-            style.WindowRounding = 10.0f;
-            style.FrameRounding = 6.0f;
-            style.PopupRounding = 6.0f;
-            style.ScrollbarRounding = 6.0f;
-            style.GrabRounding = 4.0f;
-            style.WindowBorderSize = 1.0f;
-            style.ScaleAllSizes(1.4f);
+                ImGui::StyleColorsDark();
+                ImGuiStyle& style = ImGui::GetStyle();
+                style.WindowRounding = 10.0f;
+                style.FrameRounding = 6.0f;
+                style.PopupRounding = 6.0f;
+                style.ScrollbarRounding = 6.0f;
+                style.GrabRounding = 4.0f;
+                style.WindowBorderSize = 1.0f;
+                style.ScaleAllSizes(1.4f);
+            }
 
             const char* gl_version_str = (const char*)glGetString(GL_VERSION);
             const char* gles_version = "#version 300 es";
             if (gl_version_str != nullptr && strstr(gl_version_str, "OpenGL ES 2.0") != nullptr) {
                 gles_version = "#version 100";
             }
-            LOGD("Detected OpenGL ES version: %s -> Using shader version: %s", gl_version_str ? gl_version_str : "Unknown", gles_version);
+            LOGD("Initializing ImGui for Context %p. Detected OpenGL ES version: %s -> Using shader version: %s", 
+                 ctx, gl_version_str ? gl_version_str : "Unknown", gles_version);
 
             if (ImGui_ImplOpenGL3_Init(gles_version)) {
                 g_EngineInitialized = true;
-                LOGD("ImGui Render Engine initialized successfully (%dx%d)", width, height);
+                LOGD("ImGui Render Engine initialized successfully (%dx%d) on context %p", width, height, ctx);
             } else {
-                LOGE("ImGui_ImplOpenGL3_Init failed in Render Engine");
+                LOGE("ImGui_ImplOpenGL3_Init failed in Render Engine on context %p", ctx);
             }
         }
 
         if (g_EngineInitialized) {
             // Backup complete OpenGL state to prevent breaking the virtualized/host app's rendering
-            GLint last_program, last_texture, last_array_buffer, last_viewport[4];
+            GLint last_program, last_texture, last_array_buffer, last_element_array_buffer, last_vertex_array;
+            GLint last_viewport[4], last_scissor_box[4];
+            GLboolean last_enable_blend, last_enable_cull_face, last_enable_depth_test, last_enable_scissor_test;
+
             glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
             glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
             glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_array_buffer);
+            glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &last_element_array_buffer);
             glGetIntegerv(GL_VIEWPORT, last_viewport);
+            glGetIntegerv(GL_SCISSOR_BOX, last_scissor_box);
+            last_enable_blend = glIsEnabled(GL_BLEND);
+            last_enable_cull_face = glIsEnabled(GL_CULL_FACE);
+            last_enable_depth_test = glIsEnabled(GL_DEPTH_TEST);
+            last_enable_scissor_test = glIsEnabled(GL_SCISSOR_TEST);
 
             ImGuiIO& io = ImGui::GetIO();
             io.DisplaySize = ImVec2((float)width, (float)height);
@@ -136,7 +171,14 @@ static void render_imgui_frame(EGLDisplay dpy, EGLSurface surface) {
             glUseProgram(last_program);
             glBindTexture(GL_TEXTURE_2D, last_texture);
             glBindBuffer(GL_ARRAY_BUFFER, last_array_buffer);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_element_array_buffer);
             glViewport(last_viewport[0], last_viewport[1], last_viewport[2], last_viewport[3]);
+            glScissor(last_scissor_box[0], last_scissor_box[1], last_scissor_box[2], last_scissor_box[3]);
+            
+            if (last_enable_blend) glEnable(GL_BLEND); else glDisable(GL_BLEND);
+            if (last_enable_cull_face) glEnable(GL_CULL_FACE); else glDisable(GL_CULL_FACE);
+            if (last_enable_depth_test) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
+            if (last_enable_scissor_test) glEnable(GL_SCISSOR_TEST); else glDisable(GL_SCISSOR_TEST);
         }
     }
 }
@@ -541,11 +583,11 @@ static void library_monitor_thread_func() {
 }
 
 void ImGuiRenderEngine::init(const char* packageName) {
-    bytehook_init(BYTEHOOK_MODE_AUTOMATIC, true);
+    int res = bytehook_init(BYTEHOOK_MODE_AUTOMATIC, true);
     if (packageName != nullptr) {
         g_TargetAppPackage = packageName;
     }
-    LOGD("Initializing ImGuiRenderEngine ByteHook PLT Hooks for package: %s", g_TargetAppPackage.c_str());
+    LOGD("Initializing ImGuiRenderEngine ByteHook PLT Hooks for package: %s (ByteHook init res: %d)", g_TargetAppPackage.c_str(), res);
 
     void* h1 = bytehook_hook_all(nullptr, "eglSwapBuffers", (void*)hook_eglSwapBuffers, nullptr, nullptr);
     void* h2 = bytehook_hook_all(nullptr, "eglSwapBuffersWithDamageEXT", (void*)hook_eglSwapBuffersWithDamageEXT, nullptr, nullptr);
@@ -561,6 +603,10 @@ void ImGuiRenderEngine::init(const char* packageName) {
          h4 ? "OK" : "FAILED",
          h5 ? "OK" : "FAILED",
          h6 ? "OK" : "FAILED");
+
+    // Try specifically hooking libEGL.so and libGLESv2.so directly as well
+    bytehook_hook_single("libEGL.so", nullptr, "eglSwapBuffers", (void*)hook_eglSwapBuffers, nullptr, nullptr);
+    bytehook_hook_single("libGLESv2.so", nullptr, "eglSwapBuffers", (void*)hook_eglSwapBuffers, nullptr, nullptr);
 
     LOGD("Spawning targeted dynamic library monitor thread");
     std::thread(library_monitor_thread_func).detach();

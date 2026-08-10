@@ -415,6 +415,11 @@ public class IPackageManagerProxy extends BinderInvocationStub {
             String permission = (String) args[0];
             String packageName = (String) args[1];
             
+            if (permission != null && (permission.equals(android.Manifest.permission.INTERNET) ||
+                permission.equals(android.Manifest.permission.ACCESS_NETWORK_STATE) ||
+                permission.equals(android.Manifest.permission.ACCESS_WIFI_STATE))) {
+                return PackageManager.PERMISSION_GRANTED;
+            }
             
             if (isAudioPermission(permission)) {
                 Slog.d(TAG, "SimpleAudioPermissionHook: Granting audio permission: " + permission + " to " + packageName);
@@ -433,7 +438,7 @@ public class IPackageManagerProxy extends BinderInvocationStub {
                 return PackageManager.PERMISSION_GRANTED;
             }
             
-            
+            args[1] = BlackBoxCore.getHostPkg();
             return method.invoke(who, args);
         }
     }
@@ -445,6 +450,11 @@ public class IPackageManagerProxy extends BinderInvocationStub {
             String permission = (String) args[0];
             String packageName = (String) args[1];
             
+            if (permission != null && (permission.equals(android.Manifest.permission.INTERNET) ||
+                permission.equals(android.Manifest.permission.ACCESS_NETWORK_STATE) ||
+                permission.equals(android.Manifest.permission.ACCESS_WIFI_STATE))) {
+                return PackageManager.PERMISSION_GRANTED;
+            }
             
             if (isAudioPermission(permission)) {
                 Slog.d(TAG, "CheckSelfPermission: Granting audio permission: " + permission + " to " + packageName);
@@ -463,7 +473,7 @@ public class IPackageManagerProxy extends BinderInvocationStub {
                 return PackageManager.PERMISSION_GRANTED;
             }
             
-            
+            args[1] = BlackBoxCore.getHostPkg();
             return method.invoke(who, args);
         }
     }

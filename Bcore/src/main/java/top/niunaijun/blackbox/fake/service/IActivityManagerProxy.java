@@ -344,17 +344,15 @@ public class IActivityManagerProxy extends ClassInvocationStub {
             String resolvedType = (String) args[3];
             IServiceConnection connection = (IServiceConnection) args[4];
 
-            
             if (intent == null) {
                 Slog.w(TAG, "BindServiceCommon: Intent is null, proceeding with original call");
                 return method.invoke(who, args);
             }
 
-            
-
             int userId = intent.getIntExtra("_B_|_UserId", -1);
             userId = userId == -1 ? BActivityThread.getUserId() : userId;
             ResolveInfo resolveInfo = BlackBoxCore.getBPackageManager().resolveService(intent, 0, resolvedType, userId);
+            
             if (resolveInfo != null || AppSystemEnv.isOpenPackage(intent.getComponent())) {
                 Intent proxyIntent = BlackBoxCore.getBActivityManager().bindService(intent,
                         connection == null ? null : connection.asBinder(),
@@ -373,7 +371,6 @@ public class IActivityManagerProxy extends ClassInvocationStub {
                     }
                 }
 
-                
                 if (proxyIntent != null && proxyIntent.getComponent() != null && 
                     proxyIntent.getComponent().getPackageName().equals(BlackBoxCore.getHostPkg())){
                     int flagsIndex = getFlagsIndex(args);
@@ -388,6 +385,21 @@ public class IActivityManagerProxy extends ClassInvocationStub {
                 if (proxyIntent != null) {
                     args[2] = proxyIntent;
                     return method.invoke(who, args);
+                }
+            } else {
+                // If it's a host service (like GMS), we still need to replace the calling package
+                // and wrap the connection to intercept its binder.
+                if (connection != null) {
+                    IServiceConnection proxy = ServiceConnectionDelegate.createProxy(connection, intent);
+                    args[4] = proxy;
+
+                    WeakReference<?> weakReference = BRLoadedApkServiceDispatcherInnerConnection.get(connection).mDispatcher();
+                    if (weakReference != null) {
+                        BRLoadedApkServiceDispatcher.get(weakReference.get())._set_mConnection(proxy);
+                    }
+                }
+                if (callingPackageIndex >= 0 && callingPackageIndex < args.length && args[callingPackageIndex] instanceof String) {
+                    args[callingPackageIndex] = BlackBoxCore.getHostPkg();
                 }
             }
             return method.invoke(who, args);
@@ -780,7 +792,10 @@ public class IActivityManagerProxy extends ClassInvocationStub {
             MethodParameterUtils.replaceLastUid(args);
             String permission = (String) args[0];
             if (permission.equals(Manifest.permission.ACCOUNT_MANAGER)
-                    || permission.equals(Manifest.permission.SEND_SMS)) {
+                    || permission.equals(Manifest.permission.SEND_SMS)
+                    || permission.equals(Manifest.permission.INTERNET)
+                    || permission.equals(Manifest.permission.ACCESS_NETWORK_STATE)
+                    || permission.equals(Manifest.permission.ACCESS_WIFI_STATE)) {
                 return PackageManager.PERMISSION_GRANTED;
             }
             

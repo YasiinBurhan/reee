@@ -153,7 +153,7 @@ public class HookManager {
             addInjector(new IAccountManagerProxy());
             addInjector(new NetworkPermissionCompat());
             addInjector(new IConnectivityManagerProxy());
-            addInjector(new IDnsResolverProxy());
+            // addInjector(new IDnsResolverProxy());
                     addInjector(new IAttributionSourceProxy());
         addInjector(new IContentProviderProxy());
         addInjector(new ISettingsSystemProxy());

@@ -7,6 +7,7 @@ import java.lang.reflect.Method;
 
 import black.android.os.BRServiceManager;
 import top.niunaijun.blackbox.BlackBoxCore;
+import top.niunaijun.blackbox.app.BActivityThread;
 import top.niunaijun.blackbox.fake.hook.BinderInvocationStub;
 import top.niunaijun.blackbox.fake.hook.MethodHook;
 import top.niunaijun.blackbox.fake.hook.ProxyMethod;
@@ -41,22 +42,78 @@ public class GmsProxy extends BinderInvocationStub {
             Slog.d(TAG, "GMS service binder not present on device");
             return null;
         }
+        
+        ClassLoader classLoader = null;
         try {
-            Class<?> stubClass;
+            if (BActivityThread.getApplication() != null) {
+                classLoader = BActivityThread.getApplication().getClassLoader();
+            }
+        } catch (Throwable ignored) {}
+        if (classLoader == null) {
+            classLoader = Thread.currentThread().getContextClassLoader();
+        }
+        if (classLoader == null) {
+            classLoader = GmsProxy.class.getClassLoader();
+        }
+
+        try {
+            Class<?> stubClass = null;
             try {
-                stubClass = Class.forName("com.google.android.gms.common.internal.IGmsServiceBroker$Stub");
+                stubClass = Class.forName("com.google.android.gms.common.internal.IGmsServiceBroker$Stub", true, classLoader);
             } catch (ClassNotFoundException e) {
-                stubClass = Class.forName("com.google.android.gms.common.api.internal.IGmsServiceBroker$Stub");
+                try {
+                    stubClass = Class.forName("com.google.android.gms.common.api.internal.IGmsServiceBroker$Stub", true, classLoader);
+                } catch (ClassNotFoundException e2) {
+                    // Try to find the interface as fallback
+                }
             }
-            Method asInterfaceMethod = stubClass.getMethod("asInterface", IBinder.class);
-            Object iface = asInterfaceMethod.invoke(null, binder);
-            if (iface != null) {
-                Slog.d(TAG, "Successfully obtained IGmsServiceBroker interface");
-                return iface;
-            } else {
-                Slog.e(TAG, "Reflection succeeded but returned null interface");
-                return null;
+
+            if (stubClass != null) {
+                Method asInterfaceMethod = stubClass.getMethod("asInterface", IBinder.class);
+                Object iface = asInterfaceMethod.invoke(null, binder);
+                if (iface != null) {
+                    Slog.d(TAG, "Successfully obtained IGmsServiceBroker interface using " + stubClass.getName());
+                    return iface;
+                }
             }
+
+            // Fallback to dynamic proxy of the interface if stub is missing
+            Class<?> gmsInterface = null;
+            try {
+                gmsInterface = Class.forName("com.google.android.gms.common.internal.IGmsServiceBroker", true, classLoader);
+            } catch (ClassNotFoundException e) {
+                try {
+                    gmsInterface = Class.forName("com.google.android.gms.common.api.internal.IGmsServiceBroker", true, classLoader);
+                } catch (ClassNotFoundException e2) {
+                    Slog.e(TAG, "Neither GMS stub nor interface found");
+                }
+            }
+
+            if (gmsInterface != null) {
+                final Class<?> finalGmsInterface = gmsInterface;
+                final IBinder finalBinder = binder;
+                Object proxyInstance = java.lang.reflect.Proxy.newProxyInstance(
+                    classLoader,
+                    new Class<?>[] { finalGmsInterface, android.os.IInterface.class },
+                    new java.lang.reflect.InvocationHandler() {
+                        @Override
+                        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                            if ("asBinder".equals(method.getName())) {
+                                return finalBinder;
+                            }
+                            try {
+                                return method.invoke(finalBinder, args);
+                            } catch (Throwable t) {
+                                Slog.w(TAG, "Dynamic proxy fallback invoked method failed: " + method.getName());
+                                return null;
+                            }
+                        }
+                    }
+                );
+                Slog.d(TAG, "GmsProxy: Created custom fallback dynamic proxy for " + finalGmsInterface.getName());
+                return proxyInstance;
+            }
+            return null;
         } catch (Exception e) {
             Slog.e(TAG, "Failed to get IGmsServiceBroker interface", e);
             return null;
