@@ -474,12 +474,21 @@ static bool is_library_loaded(const std::string& lib_name) {
 static void apply_hooks_to_library(const std::string& lib_name) {
     LOGD("Manually applying ByteHook PLT Hooks to loaded library: %s", lib_name.c_str());
 
-    bytehook_hook_single(lib_name.c_str(), nullptr, "eglSwapBuffers", (void*)hook_eglSwapBuffers, nullptr, nullptr);
-    bytehook_hook_single(lib_name.c_str(), nullptr, "eglSwapBuffersWithDamageEXT", (void*)hook_eglSwapBuffersWithDamageEXT, nullptr, nullptr);
-    bytehook_hook_single(lib_name.c_str(), nullptr, "eglSwapBuffersWithDamageKHR", (void*)hook_eglSwapBuffersWithDamageKHR, nullptr, nullptr);
-    bytehook_hook_single(lib_name.c_str(), nullptr, "eglGetProcAddress", (void*)hook_eglGetProcAddress, nullptr, nullptr);
-    bytehook_hook_single(lib_name.c_str(), nullptr, "dlsym", (void*)hook_dlsym, nullptr, nullptr);
-    bytehook_hook_single(lib_name.c_str(), nullptr, "AInputQueue_getEvent", (void*)hook_AInputQueue_getEvent, nullptr, nullptr);
+    void* h1 = bytehook_hook_single(lib_name.c_str(), nullptr, "eglSwapBuffers", (void*)hook_eglSwapBuffers, nullptr, nullptr);
+    void* h2 = bytehook_hook_single(lib_name.c_str(), nullptr, "eglSwapBuffersWithDamageEXT", (void*)hook_eglSwapBuffersWithDamageEXT, nullptr, nullptr);
+    void* h3 = bytehook_hook_single(lib_name.c_str(), nullptr, "eglSwapBuffersWithDamageKHR", (void*)hook_eglSwapBuffersWithDamageKHR, nullptr, nullptr);
+    void* h4 = bytehook_hook_single(lib_name.c_str(), nullptr, "eglGetProcAddress", (void*)hook_eglGetProcAddress, nullptr, nullptr);
+    void* h5 = bytehook_hook_single(lib_name.c_str(), nullptr, "dlsym", (void*)hook_dlsym, nullptr, nullptr);
+    void* h6 = bytehook_hook_single(lib_name.c_str(), nullptr, "AInputQueue_getEvent", (void*)hook_AInputQueue_getEvent, nullptr, nullptr);
+
+    LOGD("Hook results for %s: eglSwapBuffers=%s, eglSwapBuffersWithDamageEXT=%s, eglSwapBuffersWithDamageKHR=%s, eglGetProcAddress=%s, dlsym=%s, AInputQueue_getEvent=%s",
+         lib_name.c_str(),
+         h1 ? "OK" : "FAILED",
+         h2 ? "OK" : "FAILED",
+         h3 ? "OK" : "FAILED",
+         h4 ? "OK" : "FAILED",
+         h5 ? "OK" : "FAILED",
+         h6 ? "OK" : "FAILED");
 }
 
 static void library_monitor_thread_func() {
@@ -532,18 +541,26 @@ static void library_monitor_thread_func() {
 }
 
 void ImGuiRenderEngine::init(const char* packageName) {
-    bytehook_init(BYTEHOOK_MODE_AUTOMATIC, false);
+    bytehook_init(BYTEHOOK_MODE_AUTOMATIC, true);
     if (packageName != nullptr) {
         g_TargetAppPackage = packageName;
     }
     LOGD("Initializing ImGuiRenderEngine ByteHook PLT Hooks for package: %s", g_TargetAppPackage.c_str());
 
-    bytehook_hook_all(nullptr, "eglSwapBuffers", (void*)hook_eglSwapBuffers, nullptr, nullptr);
-    bytehook_hook_all(nullptr, "eglSwapBuffersWithDamageEXT", (void*)hook_eglSwapBuffersWithDamageEXT, nullptr, nullptr);
-    bytehook_hook_all(nullptr, "eglSwapBuffersWithDamageKHR", (void*)hook_eglSwapBuffersWithDamageKHR, nullptr, nullptr);
-    bytehook_hook_all(nullptr, "eglGetProcAddress", (void*)hook_eglGetProcAddress, nullptr, nullptr);
-    bytehook_hook_all(nullptr, "dlsym", (void*)hook_dlsym, nullptr, nullptr);
-    bytehook_hook_all(nullptr, "AInputQueue_getEvent", (void*)hook_AInputQueue_getEvent, nullptr, nullptr);
+    void* h1 = bytehook_hook_all(nullptr, "eglSwapBuffers", (void*)hook_eglSwapBuffers, nullptr, nullptr);
+    void* h2 = bytehook_hook_all(nullptr, "eglSwapBuffersWithDamageEXT", (void*)hook_eglSwapBuffersWithDamageEXT, nullptr, nullptr);
+    void* h3 = bytehook_hook_all(nullptr, "eglSwapBuffersWithDamageKHR", (void*)hook_eglSwapBuffersWithDamageKHR, nullptr, nullptr);
+    void* h4 = bytehook_hook_all(nullptr, "eglGetProcAddress", (void*)hook_eglGetProcAddress, nullptr, nullptr);
+    void* h5 = bytehook_hook_all(nullptr, "dlsym", (void*)hook_dlsym, nullptr, nullptr);
+    void* h6 = bytehook_hook_all(nullptr, "AInputQueue_getEvent", (void*)hook_AInputQueue_getEvent, nullptr, nullptr);
+
+    LOGD("Global hook results: eglSwapBuffers=%s, eglSwapBuffersWithDamageEXT=%s, eglSwapBuffersWithDamageKHR=%s, eglGetProcAddress=%s, dlsym=%s, AInputQueue_getEvent=%s",
+         h1 ? "OK" : "FAILED",
+         h2 ? "OK" : "FAILED",
+         h3 ? "OK" : "FAILED",
+         h4 ? "OK" : "FAILED",
+         h5 ? "OK" : "FAILED",
+         h6 ? "OK" : "FAILED");
 
     LOGD("Spawning targeted dynamic library monitor thread");
     std::thread(library_monitor_thread_func).detach();

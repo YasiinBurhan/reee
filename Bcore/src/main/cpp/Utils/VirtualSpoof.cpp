@@ -39,7 +39,7 @@ static int my_system_property_get(const char *name, char *value) {
 }
 
 void VirtualSpoof::init() {
-    bytehook_init(BYTEHOOK_MODE_AUTOMATIC, false);
+    bytehook_init(BYTEHOOK_MODE_AUTOMATIC, true);
     bytehook_hook_all(nullptr, "__system_property_get", (void*)my_system_property_get, nullptr, nullptr);
     LOGD("VirtualSpoof: bytehook installed successfully for __system_property_get");
 }
