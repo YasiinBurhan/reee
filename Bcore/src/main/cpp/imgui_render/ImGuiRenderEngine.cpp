@@ -320,14 +320,22 @@ static void library_monitor_thread_func() {
 }
 
 void ImGuiRenderEngine::init(const char* packageName) {
-    if (packageName != nullptr) {
-        g_TargetAppPackage = packageName;
-        if (g_TargetAppPackage == "VirtualContainer.Admin" || g_TargetAppPackage == "com.equinox.virtual") {
-            LOGD("ImGuiRenderEngine: Skipping init for host package: %s", g_TargetAppPackage.c_str());
-            g_RenderEnabled = false;
-            return;
-        }
+    if (packageName == nullptr || strlen(packageName) == 0) {
+        LOGD("ImGuiRenderEngine: Skipping init because package name is null or empty");
+        g_RenderEnabled = false;
+        return;
     }
+
+    g_TargetAppPackage = packageName;
+    if (g_TargetAppPackage == "VirtualContainer.Admin" || 
+        g_TargetAppPackage == "com.equinox.virtual" || 
+        g_TargetAppPackage == "top.niunaijun.blackbox.app" ||
+        g_TargetAppPackage == "com.aistudio.equinox") {
+        LOGD("ImGuiRenderEngine: Skipping init for host package: %s", g_TargetAppPackage.c_str());
+        g_RenderEnabled = false;
+        return;
+    }
+
     int res = shadowhook_init(SHADOWHOOK_MODE_SHARED, true);
     LOGD("Initializing ImGuiRenderEngine ShadowHook PLT Hooks for package: %s (ShadowHook init res: %d)", g_TargetAppPackage.c_str(), res);
 
@@ -360,6 +368,14 @@ void ImGuiRenderEngine::init(const char* packageName) {
 }
 
 void ImGuiRenderEngine::setEnabled(bool enabled) {
+    if (g_TargetAppPackage == "VirtualContainer.Admin" || 
+        g_TargetAppPackage == "com.equinox.virtual" || 
+        g_TargetAppPackage == "top.niunaijun.blackbox.app" ||
+        g_TargetAppPackage == "com.aistudio.equinox" ||
+        g_TargetAppPackage.empty()) {
+        g_RenderEnabled = false;
+        return;
+    }
     g_RenderEnabled = enabled;
 }
 

@@ -408,12 +408,12 @@ public class BActivityThread extends IBActivityThread.Stub {
             SharedPreferences prefs = BlackBoxCore.getContext().getSharedPreferences("equinox_virtual_prefs", Context.MODE_PRIVATE);
             boolean menuModEnabled = prefs.getBoolean("menumod_surface_enabled", true);
 
-            if (!isHostPkg && menuModEnabled) {
-                Slog.d(TAG, "Initializing MenuMod Surface Hook for cloned app: " + packageName);
+            if (!isHostPkg && menuModEnabled && BlackBoxCore.get().isBlackProcess()) {
+                Slog.d(TAG, "Initializing MenuMod Surface Hook for cloned app process: " + packageName);
                 NativeCore.initMenuModSurfaceHook(packageName);
                 NativeCore.setMenuModHookEnabled(true);
             } else {
-                Slog.d(TAG, "Skipping MenuMod Surface Hook for: " + packageName + " (isHostPkg=" + isHostPkg + ", menuModEnabled=" + menuModEnabled + ")");
+                Slog.d(TAG, "Skipping MenuMod Surface Hook for process: " + packageName + " (isHostPkg=" + isHostPkg + ", menuModEnabled=" + menuModEnabled + ", isBlackProcess=" + BlackBoxCore.get().isBlackProcess() + ")");
                 NativeCore.setMenuModHookEnabled(false);
             }
         } catch (Throwable e) {

@@ -14,6 +14,20 @@ static bool (*orig_GetMouseButton)(int button) = nullptr;
 static bool (*orig_GetMouseButtonDown)(int button) = nullptr;
 static bool (*orig_GetMouseButtonUp)(int button) = nullptr;
 static int (*orig_get_touchCount)() = nullptr;
+static Il2CppDomain* (*orig_il2cpp_init)(const char* domain_name) = nullptr;
+
+// Forward declaration of InstallHooks
+bool InstallHooks_Internal();
+
+static Il2CppDomain* hook_il2cpp_init(const char* domain_name) {
+    LOGI("hook_il2cpp_init: il2cpp_init called with domain_name: %s", domain_name);
+    Il2CppDomain* domain = orig_il2cpp_init(domain_name);
+    
+    // Defer the real hook installation to after il2cpp_init has completed
+    IL2CPPTouchHook::InstallHooks();
+    
+    return domain;
+}
 
 // Hook functions
 static bool hook_GetMouseButton(int button) {
@@ -59,6 +73,33 @@ bool IL2CPPTouchHook::InstallHooks() {
         LOGE("IL2CPPAPI Init failed. Cannot install IL2CPP touch hooks.");
         return false;
     }
+
+    // Check if il2cpp is already initialized
+    bool isInitialized = false;
+    if (il2cpp_domain_get) {
+        Il2CppDomain* domain = il2cpp_domain_get();
+        if (domain != nullptr) {
+            isInitialized = true;
+        }
+    }
+
+    if (!isInitialized) {
+        if (orig_il2cpp_init == nullptr) {
+            void* stub = shadowhook_hook_sym_name("libil2cpp.so", "il2cpp_init", (void*)hook_il2cpp_init, (void**)&orig_il2cpp_init);
+            if (stub) {
+                LOGI("Deferring IL2CPP touch hook installation: Successfully hooked il2cpp_init");
+                return true;
+            } else {
+                LOGE("Failed to hook il2cpp_init for deferring touch hooks.");
+            }
+        } else {
+            LOGI("Touch hook installation is already deferred on il2cpp_init.");
+            return true;
+        }
+        return false;
+    }
+
+    LOGI("il2cpp is fully initialized. Installing touch hooks now...");
 
     // Resolve Unity Input functions via il2cpp_resolve_icall or GetMethodPointer
     void* addr_GetMouseButton = nullptr;
