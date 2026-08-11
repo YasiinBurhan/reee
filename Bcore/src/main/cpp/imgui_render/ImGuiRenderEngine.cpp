@@ -76,6 +76,8 @@ static void* hook_dlsym(void* handle, const char* symbol) {
 static EGLContext g_CurrentContext = EGL_NO_CONTEXT;
 static int g_FrameCounter = 0;
 
+static bool is_library_loaded(const std::string& lib_name);
+
 static void render_imgui_frame(EGLDisplay dpy, EGLSurface surface) {
     if (!g_RenderEnabled) return;
 
@@ -86,7 +88,19 @@ static void render_imgui_frame(EGLDisplay dpy, EGLSurface surface) {
 
     std::lock_guard<std::mutex> lock(g_EngineMutex);
 
-    if (g_FrameCounter++ % 300 == 0) {
+    g_FrameCounter++;
+    
+    // 1. Warm-up delay: Wait 150 frames to ensure engine's own rendering and EGL initialization is stable.
+    if (g_FrameCounter < 150) {
+        return;
+    }
+
+    // 2. Engine-specific delay: If libil2cpp is loaded, wait until the engine is fully initialized (indicated by touch hooks being active).
+    if (is_library_loaded("libil2cpp.so") && !IL2CPPTouchHook::IsInstalled()) {
+        return;
+    }
+
+    if (g_FrameCounter % 300 == 0) {
         LOGD("render_imgui_frame is ALIVE on context %p", ctx);
     }
 
@@ -327,17 +341,27 @@ void ImGuiRenderEngine::init(const char* packageName) {
     }
 
     g_TargetAppPackage = packageName;
-    if (g_TargetAppPackage == "VirtualContainer.Admin" || 
-        g_TargetAppPackage == "com.equinox.virtual" || 
-        g_TargetAppPackage == "top.niunaijun.blackbox.app" ||
-        g_TargetAppPackage == "com.aistudio.equinox") {
-        LOGD("ImGuiRenderEngine: Skipping init for host package: %s", g_TargetAppPackage.c_str());
+    
+    // Strict native-side whitelist of cloned apps
+    bool isWhitelisted = (g_TargetAppPackage == "com.mobile.legends" ||
+                         g_TargetAppPackage == "com.tencent.ig" ||
+                         g_TargetAppPackage == "com.pubg.imobile" ||
+                         g_TargetAppPackage == "com.dts.freefireth" ||
+                         g_TargetAppPackage == "com.dts.freefirebg" ||
+                         g_TargetAppPackage == "com.miHoYo.GenshinImpact" ||
+                         g_TargetAppPackage == "com.tencent.tmgp.sgame" ||
+                         g_TargetAppPackage == "com.riotgames.league.wildrift" ||
+                         g_TargetAppPackage == "com.activision.callofduty.shooter" ||
+                         g_TargetAppPackage == "com.garena.game.codm");
+
+    if (!isWhitelisted) {
+        LOGD("ImGuiRenderEngine: Package %s is not in the whitelist. Skipping overlay initialization.", g_TargetAppPackage.c_str());
         g_RenderEnabled = false;
         return;
     }
 
     int res = shadowhook_init(SHADOWHOOK_MODE_SHARED, true);
-    LOGD("Initializing ImGuiRenderEngine ShadowHook PLT Hooks for package: %s (ShadowHook init res: %d)", g_TargetAppPackage.c_str(), res);
+    LOGD("Initializing ImGuiRenderEngine ShadowHook PLT Hooks for whitelisted package: %s (ShadowHook init res: %d)", g_TargetAppPackage.c_str(), res);
 
     const char* default_libs[] = {
         "libEGL.so",
@@ -364,7 +388,9 @@ void ImGuiRenderEngine::init(const char* packageName) {
     LOGD("Spawning targeted dynamic library monitor thread");
     std::thread(library_monitor_thread_func).detach();
 
-    LOGD("ImGuiRenderEngine ShadowHook PLT Hooks initialized successfully");
+    // Automatically enable rendering on success (minimizing JNI transitions)
+    g_RenderEnabled = true;
+    LOGD("ImGuiRenderEngine ShadowHook PLT Hooks initialized and enabled successfully");
 }
 
 void ImGuiRenderEngine::setEnabled(bool enabled) {

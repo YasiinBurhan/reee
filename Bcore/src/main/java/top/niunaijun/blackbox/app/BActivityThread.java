@@ -409,12 +409,28 @@ public class BActivityThread extends IBActivityThread.Stub {
             boolean menuModEnabled = prefs.getBoolean("menumod_surface_enabled", true);
 
             if (!isHostPkg && menuModEnabled && BlackBoxCore.get().isBlackProcess()) {
-                Slog.d(TAG, "Initializing MenuMod Surface Hook for cloned app process: " + packageName);
-                NativeCore.initMenuModSurfaceHook(packageName);
-                NativeCore.setMenuModHookEnabled(true);
+                // Whitelist of cloned apps where ImGui overlay is allowed
+                boolean isWhitelisted = "com.mobile.legends".equals(packageName)
+                        || "com.tencent.ig".equals(packageName)
+                        || "com.pubg.imobile".equals(packageName)
+                        || "com.dts.freefireth".equals(packageName)
+                        || "com.dts.freefirebg".equals(packageName)
+                        || "com.miHoYo.GenshinImpact".equals(packageName)
+                        || "com.tencent.tmgp.sgame".equals(packageName)
+                        || "com.riotgames.league.wildrift".equals(packageName)
+                        || "com.activision.callofduty.shooter".equals(packageName)
+                        || "com.garena.game.codm".equals(packageName);
+
+                if (isWhitelisted) {
+                    Slog.d(TAG, "Initializing MenuMod Surface Hook for whitelisted cloned app process: " + packageName);
+                    // Minimize JNI calls: Consolidated into a single call.
+                    // The native side automatically enables rendering if whitelisted and initialized.
+                    NativeCore.initMenuModSurfaceHook(packageName);
+                } else {
+                    Slog.d(TAG, "Skipping MenuMod Surface Hook JNI for non-whitelisted package: " + packageName);
+                }
             } else {
                 Slog.d(TAG, "Skipping MenuMod Surface Hook for process: " + packageName + " (isHostPkg=" + isHostPkg + ", menuModEnabled=" + menuModEnabled + ", isBlackProcess=" + BlackBoxCore.get().isBlackProcess() + ")");
-                NativeCore.setMenuModHookEnabled(false);
             }
         } catch (Throwable e) {
             Slog.e(TAG, "Failed to initialize MenuMod Surface Hook: " + e.getMessage());
