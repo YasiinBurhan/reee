@@ -12,6 +12,7 @@ import android.content.ContentProviderClient;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
@@ -401,7 +402,20 @@ public class BActivityThread extends IBActivityThread.Stub {
 
         NativeCore.init(Build.VERSION.SDK_INT);
         try {
-            NativeCore.initMenuModSurfaceHook(packageName);
+            boolean isHostPkg = packageName.equals(BlackBoxCore.getHostPkg())
+                    || "VirtualContainer.Admin".equals(packageName)
+                    || "com.equinox.virtual".equals(packageName);
+            SharedPreferences prefs = BlackBoxCore.getContext().getSharedPreferences("equinox_virtual_prefs", Context.MODE_PRIVATE);
+            boolean menuModEnabled = prefs.getBoolean("menumod_surface_enabled", true);
+
+            if (!isHostPkg && menuModEnabled) {
+                Slog.d(TAG, "Initializing MenuMod Surface Hook for cloned app: " + packageName);
+                NativeCore.initMenuModSurfaceHook(packageName);
+                NativeCore.setMenuModHookEnabled(true);
+            } else {
+                Slog.d(TAG, "Skipping MenuMod Surface Hook for: " + packageName + " (isHostPkg=" + isHostPkg + ", menuModEnabled=" + menuModEnabled + ")");
+                NativeCore.setMenuModHookEnabled(false);
+            }
         } catch (Throwable e) {
             Slog.e(TAG, "Failed to initialize MenuMod Surface Hook: " + e.getMessage());
         }

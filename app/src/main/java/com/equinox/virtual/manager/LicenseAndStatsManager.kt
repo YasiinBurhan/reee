@@ -2,14 +2,10 @@ package com.equinox.virtual.manager
 
 import android.content.SharedPreferences
 import android.util.Log
-import com.equinox.virtual.model.LicenseKey
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import java.util.UUID
 
 class LicenseAndStatsManager(
     private val prefs: SharedPreferences,

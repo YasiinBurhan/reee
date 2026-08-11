@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.22.1)
 
 add_library(imgui_render STATIC
     ImGuiRenderEngine.cpp
+    ImGuiMenuUI.cpp
     ../imgui/imgui.cpp
     ../imgui/imgui_draw.cpp
     ../imgui/imgui_widgets.cpp
@@ -14,6 +15,7 @@ add_library(imgui_render STATIC
 target_include_directories(imgui_render PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/../imgui
+    ${CMAKE_CURRENT_SOURCE_DIR}/../il2cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../Base
     ${CMAKE_CURRENT_SOURCE_DIR}/../shadowhook/shadowhook/src/main/cpp/include
 )

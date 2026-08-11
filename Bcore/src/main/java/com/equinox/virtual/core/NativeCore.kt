@@ -89,6 +89,7 @@ object NativeCore {
 
     @Keep
     @JvmStatic
+    @Suppress("DEPRECATION")
     fun loadEmptyDex(): LongArray {
         try {
             var emptyJar = JarManager.getInstance().emptyJar
@@ -117,6 +118,7 @@ object NativeCore {
         return longArrayOf()
     }
 
+    @Suppress("DEPRECATION")
     private fun createFallbackEmptyDex(): LongArray {
         try {
             Slog.d(TAG, "Creating fallback empty DEX")

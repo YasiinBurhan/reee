@@ -117,6 +117,7 @@ class VirtualSpaceManager(private val application: Application) {
         }
     }
 
+    @Suppress("DEPRECATION")
     fun loadHostApps(allowedPackages: Set<String> = emptySet(), allowedPackageList: List<AllowedPackage> = emptyList()) {
         try {
             val selfPackage = application.packageName
@@ -192,6 +193,7 @@ class VirtualSpaceManager(private val application: Application) {
         BlackBoxCore.get().clearPackage(packageName, userId)
     }
 
+    @Suppress("DEPRECATION")
     fun installFromFile(file: File, userId: Int): Pair<Boolean, String> {
         var isXapk = false
         try {

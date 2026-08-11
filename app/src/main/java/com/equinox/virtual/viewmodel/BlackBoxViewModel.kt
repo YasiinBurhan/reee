@@ -12,7 +12,6 @@ import com.equinox.virtual.manager.LicenseAndStatsManager
 import com.equinox.virtual.manager.VirtualSpaceManager
 import com.equinox.virtual.model.AllowedPackage
 import com.equinox.virtual.model.FirestoreUser
-import com.equinox.virtual.model.LicenseKey
 import com.equinox.virtual.model.VirtualAppInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -240,10 +239,7 @@ class BlackBoxViewModel(application: Application) : AndroidViewModel(application
         _runningPackageName.value = packageName
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                if (isModMode) {
-                    settingsManager.setMenuModSurfaceEnabled(true)
-                    com.equinox.virtual.core.NativeCore.setMenuModHookEnabled(true)
-                }
+                settingsManager.setMenuModSurfaceEnabled(isModMode)
                 val userId = virtualSpaceManager.currentUserId.value
                 val success = virtualSpaceManager.launchApk(packageName, userId)
                 if (success) {

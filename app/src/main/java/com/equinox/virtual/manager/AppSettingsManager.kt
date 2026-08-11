@@ -26,15 +26,6 @@ class AppSettingsManager(context: Context) {
     private val _menuModSurfaceEnabled = MutableStateFlow(prefs.getBoolean("menumod_surface_enabled", true))
     val menuModSurfaceEnabled: StateFlow<Boolean> = _menuModSurfaceEnabled.asStateFlow()
 
-    init {
-        if (_menuModSurfaceEnabled.value) {
-            try {
-                com.equinox.virtual.core.NativeCore.initMenuModSurfaceHook("VirtualContainer.Admin")
-                com.equinox.virtual.core.NativeCore.setMenuModHookEnabled(true)
-            } catch (_: Throwable) {}
-        }
-    }
-
     private val _isDarkTheme = MutableStateFlow<Boolean?>(
         if (prefs.contains("is_dark_theme")) prefs.getBoolean("is_dark_theme", false) else null
     )
@@ -49,14 +40,6 @@ class AppSettingsManager(context: Context) {
     fun setMenuModSurfaceEnabled(enabled: Boolean) {
         _menuModSurfaceEnabled.value = enabled
         prefs.edit().putBoolean("menumod_surface_enabled", enabled).apply()
-        try {
-            if (enabled) {
-                com.equinox.virtual.core.NativeCore.initMenuModSurfaceHook("VirtualContainer.Admin")
-                com.equinox.virtual.core.NativeCore.setMenuModHookEnabled(true)
-            } else {
-                com.equinox.virtual.core.NativeCore.setMenuModHookEnabled(false)
-            }
-        } catch (_: Throwable) {}
     }
 
     fun setDeviceSpoofingEnabled(enabled: Boolean) {
