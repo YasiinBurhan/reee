@@ -15,6 +15,7 @@ target_include_directories(imgui_render PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/../imgui
     ${CMAKE_CURRENT_SOURCE_DIR}/../Base
+    ${CMAKE_CURRENT_SOURCE_DIR}/../shadowhook/shadowhook/src/main/cpp/include
 )
 
 target_compile_options(imgui_render PRIVATE
@@ -25,7 +26,7 @@ target_compile_options(imgui_render PRIVATE
 
 target_link_libraries(imgui_render
     PUBLIC
-    bytehook::bytehook
+    shadowhook
     log
     android
     EGL

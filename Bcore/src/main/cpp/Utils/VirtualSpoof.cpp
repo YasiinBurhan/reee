@@ -4,7 +4,7 @@
 #include <cstring>
 #include <dlfcn.h>
 #include <android/log.h>
-#include "bytehook.h"
+#include "shadowhook.h"
 
 #define TAG "VirtualSpoof"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, TAG, __VA_ARGS__)
@@ -34,14 +34,14 @@ static int my_system_property_get(const char *name, char *value) {
         strcpy(value, "1");
         return strlen(value);
     }
-    BYTEHOOK_STACK_SCOPE();
-    return BYTEHOOK_CALL_PREV(my_system_property_get, name, value);
+    SHADOWHOOK_STACK_SCOPE();
+    return SHADOWHOOK_CALL_PREV(my_system_property_get, name, value);
 }
 
 void VirtualSpoof::init() {
-    bytehook_init(BYTEHOOK_MODE_AUTOMATIC, true);
-    bytehook_hook_all(nullptr, "__system_property_get", (void*)my_system_property_get, nullptr, nullptr);
-    LOGD("VirtualSpoof: bytehook installed successfully for __system_property_get");
+    shadowhook_init(SHADOWHOOK_MODE_SHARED, true);
+    shadowhook_hook_sym_name("libc.so", "__system_property_get", (void*)my_system_property_get, nullptr);
+    LOGD("VirtualSpoof: shadowhook installed successfully for __system_property_get in libc.so");
 }
 
 } // namespace blackbox

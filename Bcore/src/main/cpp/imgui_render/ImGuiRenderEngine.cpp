@@ -12,7 +12,7 @@
 #include <vector>
 #include <string>
 #include <fstream>
-#include "bytehook.h"
+#include "shadowhook.h"
 #include "imgui.h"
 #include "backends/imgui_impl_opengl3.h"
 #include "backends/imgui_impl_android.h"
@@ -34,7 +34,7 @@ static EGLBoolean hook_eglSwapBuffersWithDamageEXT(EGLDisplay dpy, EGLSurface su
 static EGLBoolean hook_eglSwapBuffersWithDamageKHR(EGLDisplay dpy, EGLSurface surface, EGLint *rects, EGLint n_rects);
 
 static void* hook_eglGetProcAddress(const char* procname) {
-    BYTEHOOK_STACK_SCOPE();
+    SHADOWHOOK_STACK_SCOPE();
 
     if (procname != nullptr) {
         if (strcmp(procname, "eglSwapBuffers") == 0) {
@@ -49,11 +49,11 @@ static void* hook_eglGetProcAddress(const char* procname) {
         }
     }
 
-    return BYTEHOOK_CALL_PREV(hook_eglGetProcAddress, procname);
+    return SHADOWHOOK_CALL_PREV(hook_eglGetProcAddress, procname);
 }
 
 static void* hook_dlsym(void* handle, const char* symbol) {
-    BYTEHOOK_STACK_SCOPE();
+    SHADOWHOOK_STACK_SCOPE();
 
     if (symbol != nullptr) {
         if (strcmp(symbol, "eglSwapBuffers") == 0) {
@@ -68,7 +68,7 @@ static void* hook_dlsym(void* handle, const char* symbol) {
         }
     }
 
-    return BYTEHOOK_CALL_PREV(hook_dlsym, handle, symbol);
+    return SHADOWHOOK_CALL_PREV(hook_dlsym, handle, symbol);
 }
 
 static EGLContext g_CurrentContext = EGL_NO_CONTEXT;
@@ -92,8 +92,6 @@ static void render_imgui_frame(EGLDisplay dpy, EGLSurface surface) {
         LOGD("EGL Context changed from %p to %p - Re-initializing ImGui backend", g_CurrentContext, ctx);
         if (g_EngineInitialized) {
             ImGui_ImplOpenGL3_Shutdown();
-            // We don't destroy context because it might be shared or reused in ways we don't want to break
-            // ImGui::DestroyContext(); 
             g_EngineInitialized = false;
         }
         g_CurrentContext = ctx;
@@ -139,7 +137,6 @@ static void render_imgui_frame(EGLDisplay dpy, EGLSurface surface) {
         }
 
         if (g_EngineInitialized) {
-            // Backup complete OpenGL state to prevent breaking the virtualized/host app's rendering
             GLint last_program, last_texture, last_array_buffer, last_element_array_buffer, last_vertex_array;
             GLint last_viewport[4], last_scissor_box[4];
             GLboolean last_enable_blend, last_enable_cull_face, last_enable_depth_test, last_enable_scissor_test;
@@ -167,7 +164,6 @@ static void render_imgui_frame(EGLDisplay dpy, EGLSurface surface) {
             glViewport(0, 0, width, height);
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-            // Fully restore the host app's original OpenGL states
             glUseProgram(last_program);
             glBindTexture(GL_TEXTURE_2D, last_texture);
             glBindBuffer(GL_ARRAY_BUFFER, last_array_buffer);
@@ -184,28 +180,28 @@ static void render_imgui_frame(EGLDisplay dpy, EGLSurface surface) {
 }
 
 static EGLBoolean hook_eglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
-    BYTEHOOK_STACK_SCOPE();
+    SHADOWHOOK_STACK_SCOPE();
     render_imgui_frame(dpy, surface);
-    return BYTEHOOK_CALL_PREV(hook_eglSwapBuffers, dpy, surface);
+    return SHADOWHOOK_CALL_PREV(hook_eglSwapBuffers, dpy, surface);
 }
 
 static EGLBoolean hook_eglSwapBuffersWithDamageEXT(EGLDisplay dpy, EGLSurface surface, EGLint *rects, EGLint n_rects) {
-    BYTEHOOK_STACK_SCOPE();
+    SHADOWHOOK_STACK_SCOPE();
     render_imgui_frame(dpy, surface);
-    return BYTEHOOK_CALL_PREV(hook_eglSwapBuffersWithDamageEXT, dpy, surface, rects, n_rects);
+    return SHADOWHOOK_CALL_PREV(hook_eglSwapBuffersWithDamageEXT, dpy, surface, rects, n_rects);
 }
 
 static EGLBoolean hook_eglSwapBuffersWithDamageKHR(EGLDisplay dpy, EGLSurface surface, EGLint *rects, EGLint n_rects) {
-    BYTEHOOK_STACK_SCOPE();
+    SHADOWHOOK_STACK_SCOPE();
     render_imgui_frame(dpy, surface);
-    return BYTEHOOK_CALL_PREV(hook_eglSwapBuffersWithDamageKHR, dpy, surface, rects, n_rects);
+    return SHADOWHOOK_CALL_PREV(hook_eglSwapBuffersWithDamageKHR, dpy, surface, rects, n_rects);
 }
 
 static int32_t hook_AInputQueue_getEvent(void* queue, AInputEvent** outEvent) {
-    BYTEHOOK_STACK_SCOPE();
+    SHADOWHOOK_STACK_SCOPE();
 
     while (true) {
-        int32_t res = BYTEHOOK_CALL_PREV(hook_AInputQueue_getEvent, queue, outEvent);
+        int32_t res = SHADOWHOOK_CALL_PREV(hook_AInputQueue_getEvent, queue, outEvent);
         if (res != 0 || outEvent == nullptr || *outEvent == nullptr) {
             return res;
         }
@@ -250,27 +246,23 @@ static int32_t hook_AInputQueue_getEvent(void* queue, AInputEvent** outEvent) {
 
 #include <unistd.h>
 
-// Static menu state
 static bool g_MenuOpen = true;
 static int g_ActiveTab = 0;
 static float g_MenuAlpha = 0.90f;
-static int g_SelectedTheme = 0; // 0 = Neon Purple, 1 = Emerald Green, 2 = Cyberpunk Yellow, 3 = Classic Dark
+static int g_SelectedTheme = 0;
 
-// Toggles & settings
 static bool g_SpeedHack = false;
 static float g_SpeedMultiplier = 1.0f;
 static bool g_SpoofAndroidId = false;
 static bool g_BypassIntegrity = false;
 static bool g_AntiCheatBypass = false;
 
-// Visuals
 static bool g_ShowFPS = true;
 static bool g_ShowCrosshair = false;
-static int g_CrosshairStyle = 0; // 0 = Dot, 1 = Plus, 2 = Circle
+static int g_CrosshairStyle = 0;
 static float g_CrosshairSize = 10.0f;
-static float g_CrosshairColor[4] = { 1.0f, 0.0f, 0.0f, 1.0f }; // Red default
+static float g_CrosshairColor[4] = { 1.0f, 0.0f, 0.0f, 1.0f };
 
-// Floating handle position (initialized dynamically on first run)
 static ImVec2 g_FloatingPos = ImVec2(50.0f, 150.0f);
 static bool g_FloatingInitialized = false;
 
@@ -278,7 +270,6 @@ static void ApplyTheme(int theme_id) {
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
 
-    // Reset base properties for premium feel
     style.WindowRounding = 12.0f;
     style.FrameRounding = 8.0f;
     style.PopupRounding = 8.0f;
@@ -287,7 +278,6 @@ static void ApplyTheme(int theme_id) {
     style.WindowBorderSize = 1.5f;
     style.FrameBorderSize = 1.0f;
 
-    // Primary Colors selection
     ImVec4 primaryColor;
     ImVec4 primaryHovered;
     ImVec4 primaryActive;
@@ -349,15 +339,13 @@ void ImGuiRenderEngine::renderOverlay(int width, int height) {
     }
 
     if (!g_MenuOpen) {
-        // Render simple minimized floating button
         ImGui::SetNextWindowSize(ImVec2(75, 75));
         ImGui::SetNextWindowPos(g_FloatingPos, ImGuiCond_Always);
         
-        // Remove borders and background paddings for round button look
         ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.08f, 0.07f, 0.10f, 0.85f));
         ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.57f, 0.23f, 0.85f, 1.0f));
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(4, 4));
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 37.5f); // Half of width/height for circle
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 37.5f);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(10, 10));
 
         ImGui::Begin("FloatingMenuButton", nullptr, 
@@ -368,19 +356,16 @@ void ImGuiRenderEngine::renderOverlay(int width, int height) {
             ImGuiWindowFlags_NoFocusOnAppearing | 
             ImGuiWindowFlags_NoBringToFrontOnFocus);
 
-        // Manage manual dragging so user can move it anywhere
         if (ImGui::IsWindowFocused() && ImGui::IsMouseDragging(0)) {
             g_FloatingPos.x += ImGui::GetIO().MouseDelta.x;
             g_FloatingPos.y += ImGui::GetIO().MouseDelta.y;
             
-            // Constrain floating button within screen boundaries
             if (g_FloatingPos.x < 0) g_FloatingPos.x = 0;
             if (g_FloatingPos.y < 0) g_FloatingPos.y = 0;
             if (g_FloatingPos.x > (float)width - 75) g_FloatingPos.x = (float)width - 75;
             if (g_FloatingPos.y > (float)height - 75) g_FloatingPos.y = (float)height - 75;
         }
 
-        // Inside the circle, draw a beautiful logo or text
         ImGui::SetCursorPos(ImVec2(12.5f, 12.5f));
         if (ImGui::Button("EQ", ImVec2(50.0f, 50.0f))) {
             g_MenuOpen = true;
@@ -390,13 +375,11 @@ void ImGuiRenderEngine::renderOverlay(int width, int height) {
         ImGui::PopStyleVar(3);
         ImGui::PopStyleColor(2);
     } else {
-        // Render main menu window
         ApplyTheme(g_SelectedTheme);
 
         ImGui::SetNextWindowSize(ImVec2(450, 320), ImGuiCond_FirstUseEver);
         ImGui::Begin("EQuinox Virtual Menu", nullptr, ImGuiWindowFlags_NoCollapse);
 
-        // Add minimized option
         if (ImGui::Button("Minimize Menu", ImVec2(120, 24))) {
             g_MenuOpen = false;
         }
@@ -405,7 +388,6 @@ void ImGuiRenderEngine::renderOverlay(int width, int height) {
 
         ImGui::Separator();
 
-        // Top tabs. Modern, spacious layout
         if (ImGui::Button("MAIN", ImVec2(90, 30))) g_ActiveTab = 0;
         ImGui::SameLine();
         if (ImGui::Button("VISUALS", ImVec2(90, 30))) g_ActiveTab = 1;
@@ -416,7 +398,6 @@ void ImGuiRenderEngine::renderOverlay(int width, int height) {
 
         ImGui::Separator();
 
-        // Render tab contents
         switch (g_ActiveTab) {
             case 0: { // MAIN
                 ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.7f, 1.0f), "Core Hacks & Overrides");
@@ -471,7 +452,6 @@ void ImGuiRenderEngine::renderOverlay(int width, int height) {
         ImGui::End();
     }
 
-    // Render Overlay Widgets (FPS and Crosshair) independent of menu state
     if (g_ShowFPS) {
         ImGui::SetNextWindowBgAlpha(0.35f);
         ImGui::SetNextWindowPos(ImVec2((float)width - 100, 10), ImGuiCond_Always);
@@ -514,23 +494,16 @@ static bool is_library_loaded(const std::string& lib_name) {
 }
 
 static void apply_hooks_to_library(const std::string& lib_name) {
-    LOGD("Manually applying ByteHook PLT Hooks to loaded library: %s", lib_name.c_str());
+    LOGD("Manually applying ShadowHook PLT Hooks to loaded library: %s", lib_name.c_str());
 
-    void* h1 = bytehook_hook_single(lib_name.c_str(), nullptr, "eglSwapBuffers", (void*)hook_eglSwapBuffers, nullptr, nullptr);
-    void* h2 = bytehook_hook_single(lib_name.c_str(), nullptr, "eglSwapBuffersWithDamageEXT", (void*)hook_eglSwapBuffersWithDamageEXT, nullptr, nullptr);
-    void* h3 = bytehook_hook_single(lib_name.c_str(), nullptr, "eglSwapBuffersWithDamageKHR", (void*)hook_eglSwapBuffersWithDamageKHR, nullptr, nullptr);
-    void* h4 = bytehook_hook_single(lib_name.c_str(), nullptr, "eglGetProcAddress", (void*)hook_eglGetProcAddress, nullptr, nullptr);
-    void* h5 = bytehook_hook_single(lib_name.c_str(), nullptr, "dlsym", (void*)hook_dlsym, nullptr, nullptr);
-    void* h6 = bytehook_hook_single(lib_name.c_str(), nullptr, "AInputQueue_getEvent", (void*)hook_AInputQueue_getEvent, nullptr, nullptr);
+    void* h1 = shadowhook_hook_sym_name(lib_name.c_str(), "eglSwapBuffers", (void*)hook_eglSwapBuffers, nullptr);
+    void* h2 = shadowhook_hook_sym_name(lib_name.c_str(), "eglSwapBuffersWithDamageEXT", (void*)hook_eglSwapBuffersWithDamageEXT, nullptr);
+    void* h3 = shadowhook_hook_sym_name(lib_name.c_str(), "eglSwapBuffersWithDamageKHR", (void*)hook_eglSwapBuffersWithDamageKHR, nullptr);
+    void* h4 = shadowhook_hook_sym_name(lib_name.c_str(), "eglGetProcAddress", (void*)hook_eglGetProcAddress, nullptr);
+    void* h5 = shadowhook_hook_sym_name(lib_name.c_str(), "dlsym", (void*)hook_dlsym, nullptr);
+    void* h6 = shadowhook_hook_sym_name(lib_name.c_str(), "AInputQueue_getEvent", (void*)hook_AInputQueue_getEvent, nullptr);
 
-    LOGD("Hook results for %s: eglSwapBuffers=%s, eglSwapBuffersWithDamageEXT=%s, eglSwapBuffersWithDamageKHR=%s, eglGetProcAddress=%s, dlsym=%s, AInputQueue_getEvent=%s",
-         lib_name.c_str(),
-         h1 ? "OK" : "FAILED",
-         h2 ? "OK" : "FAILED",
-         h3 ? "OK" : "FAILED",
-         h4 ? "OK" : "FAILED",
-         h5 ? "OK" : "FAILED",
-         h6 ? "OK" : "FAILED");
+    LOGD("ShadowHook results for %s: eglSwapBuffers=%p, eglGetProcAddress=%p, dlsym=%p", lib_name.c_str(), h1, h4, h5);
 }
 
 static void library_monitor_thread_func() {
@@ -546,22 +519,8 @@ static void library_monitor_thread_func() {
         "libGLESv3.so"
     };
 
-    int fallback_counter = 0;
-
-    // Keep running as long as the process is alive
     while (true) {
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        fallback_counter++;
-
-        // Global fallback once every 5 seconds to hook any other newly loaded libraries
-        if (fallback_counter >= 5) {
-            fallback_counter = 0;
-            bytehook_hook_all(nullptr, "eglSwapBuffers", (void*)hook_eglSwapBuffers, nullptr, nullptr);
-            bytehook_hook_all(nullptr, "eglSwapBuffersWithDamageEXT", (void*)hook_eglSwapBuffersWithDamageEXT, nullptr, nullptr);
-            bytehook_hook_all(nullptr, "eglSwapBuffersWithDamageKHR", (void*)hook_eglSwapBuffersWithDamageKHR, nullptr, nullptr);
-            bytehook_hook_all(nullptr, "eglGetProcAddress", (void*)hook_eglGetProcAddress, nullptr, nullptr);
-            bytehook_hook_all(nullptr, "dlsym", (void*)hook_dlsym, nullptr, nullptr);
-        }
 
         for (const auto& lib : target_libs) {
             {
@@ -583,35 +542,38 @@ static void library_monitor_thread_func() {
 }
 
 void ImGuiRenderEngine::init(const char* packageName) {
-    int res = bytehook_init(BYTEHOOK_MODE_AUTOMATIC, true);
+    int res = shadowhook_init(SHADOWHOOK_MODE_SHARED, true);
     if (packageName != nullptr) {
         g_TargetAppPackage = packageName;
     }
-    LOGD("Initializing ImGuiRenderEngine ByteHook PLT Hooks for package: %s (ByteHook init res: %d)", g_TargetAppPackage.c_str(), res);
+    LOGD("Initializing ImGuiRenderEngine ShadowHook PLT Hooks for package: %s (ShadowHook init res: %d)", g_TargetAppPackage.c_str(), res);
 
-    void* h1 = bytehook_hook_all(nullptr, "eglSwapBuffers", (void*)hook_eglSwapBuffers, nullptr, nullptr);
-    void* h2 = bytehook_hook_all(nullptr, "eglSwapBuffersWithDamageEXT", (void*)hook_eglSwapBuffersWithDamageEXT, nullptr, nullptr);
-    void* h3 = bytehook_hook_all(nullptr, "eglSwapBuffersWithDamageKHR", (void*)hook_eglSwapBuffersWithDamageKHR, nullptr, nullptr);
-    void* h4 = bytehook_hook_all(nullptr, "eglGetProcAddress", (void*)hook_eglGetProcAddress, nullptr, nullptr);
-    void* h5 = bytehook_hook_all(nullptr, "dlsym", (void*)hook_dlsym, nullptr, nullptr);
-    void* h6 = bytehook_hook_all(nullptr, "AInputQueue_getEvent", (void*)hook_AInputQueue_getEvent, nullptr, nullptr);
+    const char* default_libs[] = {
+        "libEGL.so",
+        "libGLESv2.so",
+        "libGLESv3.so",
+        "libunity.so",
+        "libcocos2dcpp.so",
+        "libUE4.so",
+        "libUnreal.so",
+        "libflutter.so",
+        "libmonosgen-2.0.so",
+        "libhwui.so"
+    };
 
-    LOGD("Global hook results: eglSwapBuffers=%s, eglSwapBuffersWithDamageEXT=%s, eglSwapBuffersWithDamageKHR=%s, eglGetProcAddress=%s, dlsym=%s, AInputQueue_getEvent=%s",
-         h1 ? "OK" : "FAILED",
-         h2 ? "OK" : "FAILED",
-         h3 ? "OK" : "FAILED",
-         h4 ? "OK" : "FAILED",
-         h5 ? "OK" : "FAILED",
-         h6 ? "OK" : "FAILED");
-
-    // Try specifically hooking libEGL.so and libGLESv2.so directly as well
-    bytehook_hook_single("libEGL.so", nullptr, "eglSwapBuffers", (void*)hook_eglSwapBuffers, nullptr, nullptr);
-    bytehook_hook_single("libGLESv2.so", nullptr, "eglSwapBuffers", (void*)hook_eglSwapBuffers, nullptr, nullptr);
+    for (const auto& lib : default_libs) {
+        shadowhook_hook_sym_name(lib, "eglSwapBuffers", (void*)hook_eglSwapBuffers, nullptr);
+        shadowhook_hook_sym_name(lib, "eglSwapBuffersWithDamageEXT", (void*)hook_eglSwapBuffersWithDamageEXT, nullptr);
+        shadowhook_hook_sym_name(lib, "eglSwapBuffersWithDamageKHR", (void*)hook_eglSwapBuffersWithDamageKHR, nullptr);
+        shadowhook_hook_sym_name(lib, "eglGetProcAddress", (void*)hook_eglGetProcAddress, nullptr);
+        shadowhook_hook_sym_name(lib, "dlsym", (void*)hook_dlsym, nullptr);
+        shadowhook_hook_sym_name(lib, "AInputQueue_getEvent", (void*)hook_AInputQueue_getEvent, nullptr);
+    }
 
     LOGD("Spawning targeted dynamic library monitor thread");
     std::thread(library_monitor_thread_func).detach();
 
-    LOGD("ImGuiRenderEngine ByteHook PLT Hooks initialized successfully");
+    LOGD("ImGuiRenderEngine ShadowHook PLT Hooks initialized successfully");
 }
 
 void ImGuiRenderEngine::setEnabled(bool enabled) {

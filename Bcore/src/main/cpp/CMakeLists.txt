@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.22.1)
 project(blackbox)
 
-# xdl static library
-find_package(bytehook REQUIRED CONFIG)
+# shadowhook library
+add_subdirectory(shadowhook/shadowhook/src/main/cpp)
 
 add_subdirectory(imgui_render)
 
@@ -47,7 +47,7 @@ add_library(blackbox SHARED
     JniHook/JniHook.cpp
 )
 
-target_include_directories(blackbox PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/Base ${CMAKE_CURRENT_SOURCE_DIR}/Jni ${CMAKE_CURRENT_SOURCE_DIR}/imgui ${CMAKE_CURRENT_SOURCE_DIR}/imgui_render)
+target_include_directories(blackbox PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/Base ${CMAKE_CURRENT_SOURCE_DIR}/Jni ${CMAKE_CURRENT_SOURCE_DIR}/imgui ${CMAKE_CURRENT_SOURCE_DIR}/imgui_render ${CMAKE_CURRENT_SOURCE_DIR}/shadowhook/shadowhook/src/main/cpp/include)
 
 target_compile_options(blackbox PRIVATE
     -Wno-error=format-security
@@ -65,7 +65,7 @@ target_link_options(blackbox PRIVATE
 
 target_link_libraries(blackbox
     PRIVATE
-    bytehook::bytehook
+    shadowhook
     xdl
     imgui_render
     log
