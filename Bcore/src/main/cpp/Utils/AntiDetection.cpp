@@ -6,7 +6,7 @@
 #include <cstring>
 #include <cerrno>
 #include <dirent.h>
-#include "xdl.h"
+#include "shadowhook.h"
 #include "AntiDetection.h"
 
 #define LOG_TAG "AntiDetection"
@@ -213,13 +213,13 @@ static DIR* my_opendir(const char *name) {
 }
 
 static void install_file_hooks() {
-    void* handle = xdl_open("libc.so", XDL_DEFAULT);
+    void* handle = shadowhook_dlopen("libc.so");
     if (!handle) {
-        LOGD("xdl_open failed for libc.so");
+        LOGD("shadowhook_dlopen failed for libc.so");
         return;
     }
-    xdl_close(handle);
-    LOGD("File system hooks installed");
+    shadowhook_dlclose(handle);
+    LOGD("File system hooks installed via shadowhook");
 }
 
 void AntiDetection::init() {

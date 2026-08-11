@@ -299,7 +299,8 @@ class VirtualSpaceManager(private val application: Application) {
                         Log.d("VirtualSpaceManager", "XAPK: Chose best ABI '$bestAbi' for native library extraction")
                         for (apk in apkFiles) {
                             try {
-                                java.util.zip.ZipFile(apk).use { zip ->
+                                synchronized(apk.absolutePath.intern()) {
+                                    java.util.zip.ZipFile(apk).use { zip ->
                                     val entries = zip.entries()
                                     while (entries.hasMoreElements()) {
                                         val entry = entries.nextElement()
@@ -307,14 +308,16 @@ class VirtualSpaceManager(private val application: Application) {
                                         if (entry.name.startsWith(prefix) && entry.name.endsWith(".so")) {
                                             val fileName = entry.name.substring(prefix.length)
                                             val destFile = File(libDir, fileName)
+                                            Log.d("VirtualSpaceManager", "XAPK: Extracting ${entry.name} to ${destFile.absolutePath}")
                                             zip.getInputStream(entry).use { zipInput ->
                                                 destFile.outputStream().use { output ->
                                                     zipInput.copyTo(output)
                                                 }
                                             }
-                                            Log.d("VirtualSpaceManager", "XAPK: Extracted native library ${entry.name} to ${destFile.absolutePath}")
+                                            Log.d("VirtualSpaceManager", "XAPK: Successfully extracted ${entry.name}")
                                         }
                                     }
+                                }
                                 }
                             } catch (e: Exception) {
                                 Log.e("VirtualSpaceManager", "Failed to extract native libraries from ${apk.name}", e)

@@ -6,17 +6,6 @@ add_subdirectory(shadowhook/shadowhook/src/main/cpp)
 
 add_subdirectory(imgui_render)
 
-add_library(xdl STATIC
-    xdl/xdl.c
-    xdl/xdl_iterate.c
-    xdl/xdl_linker.c
-    xdl/xdl_lzma.c
-    xdl/xdl_util.c
-)
-target_include_directories(xdl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/Base)
-target_compile_features(xdl PRIVATE cxx_std_11)
-target_compile_options(xdl PRIVATE -fno-exceptions -fno-rtti -w)
-
 
 # blackbox shared library
 add_library(blackbox SHARED
@@ -33,7 +22,6 @@ add_library(blackbox SHARED
     KittyMemory/KittyMemoryBridge.cpp
     Base/hidden_api.cpp
     Base/IO.cpp
-    Utils/elf_util.cpp
     Hook/DexFileHook.cpp
     Hook/FileSystemHook.cpp
     Utils/VirtualSpoof.cpp
@@ -47,7 +35,7 @@ add_library(blackbox SHARED
     JniHook/JniHook.cpp
 )
 
-target_include_directories(blackbox PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/Base ${CMAKE_CURRENT_SOURCE_DIR}/Jni ${CMAKE_CURRENT_SOURCE_DIR}/imgui ${CMAKE_CURRENT_SOURCE_DIR}/imgui_render ${CMAKE_CURRENT_SOURCE_DIR}/shadowhook/shadowhook/src/main/cpp/include)
+target_include_directories(blackbox PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/Base ${CMAKE_CURRENT_SOURCE_DIR}/Jni ${CMAKE_CURRENT_SOURCE_DIR}/imgui ${CMAKE_CURRENT_SOURCE_DIR}/imgui_render ${CMAKE_CURRENT_SOURCE_DIR}/shadowhook/shadowhook/src/main/cpp/include ${CMAKE_CURRENT_SOURCE_DIR}/shadowhook/shadowhook/src/main/cpp)
 
 target_compile_options(blackbox PRIVATE
     -Wno-error=format-security
@@ -66,7 +54,6 @@ target_link_options(blackbox PRIVATE
 target_link_libraries(blackbox
     PRIVATE
     shadowhook
-    xdl
     imgui_render
     log
     android

@@ -1,6 +1,6 @@
 #include "FileSystemHook.h"
 #include "Log.h"
-#include "xdl.h"
+#include "shadowhook.h"
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <cstdarg>
@@ -57,27 +57,27 @@ static int new_open64(const char *pathname, int flags, ...) {
 void FileSystemHook::init() {
     ALOGD("FileSystemHook: Initializing file system hooks");
     
-    void* handle = xdl_open("libc.so", XDL_DEFAULT);
+    void* handle = shadowhook_dlopen("libc.so");
     if (!handle) {
         ALOGE("FileSystemHook: Failed to open libc.so");
         return;
     }
     
-    orig_open = (int (*)(const char*, int, ...))xdl_sym(handle, "open", nullptr);
+    orig_open = (int (*)(const char*, int, ...))shadowhook_dlsym(handle, "open");
     if (orig_open) {
         ALOGD("FileSystemHook: Found open function at %p", orig_open);
     } else {
         ALOGE("FileSystemHook: Failed to find open function");
     }
     
-    orig_open64 = (int (*)(const char*, int, ...))xdl_sym(handle, "open64", nullptr);
+    orig_open64 = (int (*)(const char*, int, ...))shadowhook_dlsym(handle, "open64");
     if (orig_open64) {
         ALOGD("FileSystemHook: Found open64 function at %p", orig_open64);
     } else {
         ALOGE("FileSystemHook: Failed to find open64 function");
     }
     
-    xdl_close(handle);
+    shadowhook_dlclose(handle);
 }
 
 } // namespace blackbox

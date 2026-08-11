@@ -1,9 +1,8 @@
 #include <jni.h>
 #include <sys/system_properties.h>
 #include <cstdlib>
-#include "xdl.h"
+#include "shadowhook.h"
 #include "hidden_api.h"
-#include "Utils/elf_util.h"
 #include "Log.h"
 
 namespace blackbox {
@@ -29,33 +28,16 @@ bool HiddenApi::disableHiddenApi(JNIEnv *env) {
         nullptr
     };
 
-    void* handle = xdl_open("libart.so", XDL_DEFAULT);
+    void* handle = shadowhook_dlopen("libart.so");
     if (handle) {
         for (int i = 0; symbol_names[i] != nullptr; i++) {
-            addr = xdl_sym(handle, symbol_names[i], nullptr);
-            if (!addr) {
-                addr = xdl_dsym(handle, symbol_names[i], nullptr);
-            }
+            addr = shadowhook_dlsym(handle, symbol_names[i]);
             if (addr) {
-                ALOGD("HiddenAPI: Found symbol %s via xdl at %p", symbol_names[i], addr);
+                ALOGD("HiddenAPI: Found symbol %s via shadowhook at %p", symbol_names[i], addr);
                 break;
             }
         }
-        xdl_close(handle);
-    }
-
-    if (!addr) {
-        SandHook::ElfImg *elf_img = new SandHook::ElfImg("libart.so");
-        if (elf_img->isValid()) {
-            for (int i = 0; symbol_names[i] != nullptr; i++) {
-                addr = (void*)elf_img->getSymbAddress(symbol_names[i]);
-                if (addr) {
-                    ALOGD("HiddenAPI: Found symbol %s via ElfImg at %p", symbol_names[i], addr);
-                    break;
-                }
-            }
-        }
-        delete elf_img;
+        shadowhook_dlclose(handle);
     }
 
     if (!addr) {
@@ -89,15 +71,15 @@ bool HiddenApi::disableHiddenApi(JNIEnv *env) {
 
 bool HiddenApi::disableResourceLoading() {
     try {
-        void* handle = xdl_open("libandroid_runtime.so", XDL_DEFAULT);
+        void* handle = shadowhook_dlopen("libandroid_runtime.so");
         if (handle) {
-            void* nativeLoadAddr = xdl_sym(handle, "_ZN7android8ApkAssets9nativeLoadEPKc", nullptr);
+            void* nativeLoadAddr = shadowhook_dlsym(handle, "_ZN7android8ApkAssets9nativeLoadEPKc");
             if (nativeLoadAddr) {
                 ALOGD("ResourceLoading: Found ApkAssets.nativeLoad at %p", nativeLoadAddr);
             } else {
                 ALOGD("ResourceLoading: Could not find ApkAssets.nativeLoad symbol");
             }
-            xdl_close(handle);
+            shadowhook_dlclose(handle);
         } else {
             ALOGD("ResourceLoading: Could not open libandroid_runtime.so");
         }
@@ -106,15 +88,15 @@ bool HiddenApi::disableResourceLoading() {
     }
 
     try {
-        void* handle = xdl_open("libc.so", XDL_DEFAULT);
+        void* handle = shadowhook_dlopen("libc.so");
         if (handle) {
-            void* openAddr = xdl_sym(handle, "open", nullptr);
+            void* openAddr = shadowhook_dlsym(handle, "open");
             if (openAddr) {
                 ALOGD("ResourceLoading: Found open function at %p", openAddr);
             } else {
                 ALOGD("ResourceLoading: Could not find open function symbol");
             }
-            xdl_close(handle);
+            shadowhook_dlclose(handle);
         } else {
             ALOGD("ResourceLoading: Could not open libc.so");
         }
