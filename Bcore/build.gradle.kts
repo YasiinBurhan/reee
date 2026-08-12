@@ -21,12 +21,29 @@ android {
         ndk {
             abiFilters.addAll(listOf("arm64-v8a", "armeabi-v7a"))
         }
+        externalNativeBuild {
+            cmake {
+                arguments("-DBCORE_DIAGNOSTICS=0")
+            }
+        }
     }
 
     buildTypes {
-        release {
+        getByName("debug") {
+            externalNativeBuild {
+                cmake {
+                    arguments("-DBCORE_DIAGNOSTICS=1")
+                }
+            }
+        }
+        getByName("release") {
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            externalNativeBuild {
+                cmake {
+                    arguments("-DBCORE_DIAGNOSTICS=0")
+                }
+            }
         }
     }
 
@@ -55,12 +72,12 @@ android {
     }
 
     lint {
-        checkReleaseBuilds = false
-        abortOnError = false
-        warningsAsErrors = false
+        checkReleaseBuilds = true
+        abortOnError = true
+        warningsAsErrors = true
         disable.addAll(setOf("UnusedResources", "RestrictedApi"))
         textOutput = file("stdout")
-        textReport = false
+        textReport = true
         checkOnly.addAll(setOf("NewApi", "InlinedApi"))
     }
 }

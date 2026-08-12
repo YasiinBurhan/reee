@@ -138,6 +138,14 @@ static int (*orig_open)(const char *pathname, int flags, ...) = nullptr;
 static ssize_t (*orig_readlink)(const char *pathname, char *buf, size_t bufsiz) = nullptr;
 static DIR* (*orig_opendir)(const char *name) = nullptr;
 
+thread_local static uint32_t antidetection_hook_depth = 0;
+
+struct AntiGuard {
+    AntiGuard() { ++antidetection_hook_depth; }
+    ~AntiGuard() { if (antidetection_hook_depth > 0) --antidetection_hook_depth; }
+    static bool isReentrant() { return antidetection_hook_depth > 1; }
+};
+
 static bool is_safe_path(const char* path) {
     if (!path) return false;
     if (strstr(path, "/proc/net/")) return true;
@@ -146,80 +154,113 @@ static bool is_safe_path(const char* path) {
 }
 
 static int my_access(const char *pathname, int mode) {
+    AntiGuard guard;
+    if (guard.isReentrant() || !orig_access) {
+        return orig_access ? orig_access(pathname, mode) : -1;
+    }
     if (pathname && !is_safe_path(pathname) && (is_blocked_file(pathname) || is_blocked_package(pathname))) {
         errno = ENOENT;
         return -1;
     }
-    return orig_access ? orig_access(pathname, mode) : -1;
+    return orig_access(pathname, mode);
 }
 
 static int my_stat(const char *pathname, struct stat *buf) {
+    AntiGuard guard;
+    if (guard.isReentrant() || !orig_stat) {
+        return orig_stat ? orig_stat(pathname, buf) : -1;
+    }
     if (pathname && !is_safe_path(pathname) && (is_blocked_file(pathname) || is_blocked_package(pathname))) {
         errno = ENOENT;
         return -1;
     }
-    return orig_stat ? orig_stat(pathname, buf) : -1;
+    return orig_stat(pathname, buf);
 }
 
 static int my_lstat(const char *pathname, struct stat *buf) {
+    AntiGuard guard;
+    if (guard.isReentrant() || !orig_lstat) {
+        return orig_lstat ? orig_lstat(pathname, buf) : -1;
+    }
     if (pathname && !is_safe_path(pathname) && (is_blocked_file(pathname) || is_blocked_package(pathname))) {
         errno = ENOENT;
         return -1;
     }
-    return orig_lstat ? orig_lstat(pathname, buf) : -1;
+    return orig_lstat(pathname, buf);
 }
 
 static FILE* my_fopen(const char *pathname, const char *mode) {
+    AntiGuard guard;
+    if (guard.isReentrant() || !orig_fopen) {
+        return orig_fopen ? orig_fopen(pathname, mode) : nullptr;
+    }
     if (pathname && !is_safe_path(pathname) && (is_blocked_file(pathname) || is_blocked_package(pathname))) {
         errno = ENOENT;
         return nullptr;
     }
-    return orig_fopen ? orig_fopen(pathname, mode) : nullptr;
+    return orig_fopen(pathname, mode);
 }
 
 static int my_open(const char *pathname, int flags, ...) {
+    bool needs_mode = (flags & O_CREAT) || ((flags & O_TMPFILE) == O_TMPFILE);
+    mode_t mode = 0;
+    if (needs_mode) {
+        va_list args;
+        va_start(args, flags);
+        mode = va_arg(args, mode_t);
+        va_end(args);
+    }
+
+    AntiGuard antiGuard;
+    if (antiGuard.isReentrant() || !orig_open) {
+        if (!orig_open) return -1;
+        return needs_mode ? orig_open(pathname, flags, mode) : orig_open(pathname, flags);
+    }
+
     if (pathname && !is_safe_path(pathname) && (is_blocked_file(pathname) || is_blocked_package(pathname))) {
         errno = ENOENT;
         return -1;
     }
-    if (orig_open) {
-        if (flags & O_CREAT) {
-            va_list args;
-            va_start(args, flags);
-            mode_t mode = va_arg(args, mode_t);
-            va_end(args);
-            return orig_open(pathname, flags, mode);
-        } else {
-            return orig_open(pathname, flags);
-        }
-    }
-    return -1;
+
+    return needs_mode ? orig_open(pathname, flags, mode) : orig_open(pathname, flags);
 }
 
 static ssize_t my_readlink(const char *pathname, char *buf, size_t bufsiz) {
+    AntiGuard guard;
+    if (guard.isReentrant() || !orig_readlink) {
+        return orig_readlink ? orig_readlink(pathname, buf, bufsiz) : -1;
+    }
     if (pathname && !is_safe_path(pathname) && (is_blocked_file(pathname) || is_blocked_package(pathname))) {
         errno = ENOENT;
         return -1;
     }
-    return orig_readlink ? orig_readlink(pathname, buf, bufsiz) : -1;
+    return orig_readlink(pathname, buf, bufsiz);
 }
 
 static DIR* my_opendir(const char *name) {
+    AntiGuard guard;
+    if (guard.isReentrant() || !orig_opendir) {
+        return orig_opendir ? orig_opendir(name) : nullptr;
+    }
     if (name && !is_safe_path(name) && (is_blocked_file(name) || is_blocked_package(name))) {
         errno = ENOENT;
         return nullptr;
     }
-    return orig_opendir ? orig_opendir(name) : nullptr;
+    return orig_opendir(name);
 }
 
 static void install_file_hooks() {
-    void* handle = shadowhook_dlopen("libc.so");
-    if (!handle) {
-        LOGD("shadowhook_dlopen failed for libc.so");
-        return;
-    }
-    shadowhook_dlclose(handle);
-    LOGD("File system hooks installed via shadowhook");
+    LOGD("Installing file system hooks via shadowhook");
+    
+    shadowhook_hook_sym_name("libc.so", "access", (void *)my_access, (void **)&orig_access);
+    shadowhook_hook_sym_name("libc.so", "stat", (void *)my_stat, (void **)&orig_stat);
+    shadowhook_hook_sym_name("libc.so", "lstat", (void *)my_lstat, (void **)&orig_lstat);
+    shadowhook_hook_sym_name("libc.so", "fopen", (void *)my_fopen, (void **)&orig_fopen);
+    shadowhook_hook_sym_name("libc.so", "open", (void *)my_open, (void **)&orig_open);
+    shadowhook_hook_sym_name("libc.so", "readlink", (void *)my_readlink, (void **)&orig_readlink);
+    shadowhook_hook_sym_name("libc.so", "opendir", (void *)my_opendir, (void **)&orig_opendir);
+    
+    LOGD("File system hooks installed");
 }
 
 void AntiDetection::init() {

@@ -51,6 +51,9 @@ object NativeCore {
     @JvmStatic
     external fun setMenuModHookEnabled(enabled: Boolean)
 
+    @JvmStatic
+    external fun runDiagnosticsTest(): Array<String>?
+
     @Keep
     @JvmStatic
     fun getCallingUid(origCallingUid: Int): Int {

@@ -1,28 +1,30 @@
 #include <cstring>
 #include "VMClassLoaderHook.h"
 #include <JniHook/JniHook.h>
+#include <Utils/SafeJni.h>
 
 namespace blackbox {
 
 static bool hideXposedClass = false;
 
 HOOK_JNI(jobject, findLoadedClass, JNIEnv *env, jobject obj, jobject class_loader, jstring name) {
-    const char * nameC = env->GetStringUTFChars(name, JNI_FALSE);
-
-    if (hideXposedClass) {
-        if (strstr(nameC, "de/robv/android/xposed/") ||
-            strstr(nameC, "me/weishu/epic") ||
-            strstr(nameC, "me/weishu/exposed") ||
-            strstr(nameC, "de.robv.android") ||
-            strstr(nameC, "me.weishu.epic") ||
-            strstr(nameC, "me.weishu.exposed")) {
-            env->ReleaseStringUTFChars(name, nameC);
+    if (name == nullptr) {
+        return orig_findLoadedClass(env, obj, class_loader, name);
+    }
+    
+    ScopedUtfChars nameC(env, name);
+    if (nameC.c_str() != nullptr && hideXposedClass) {
+        const char *str = nameC.c_str();
+        if (strstr(str, "de/robv/android/xposed/") ||
+            strstr(str, "me/weishu/epic") ||
+            strstr(str, "me/weishu/exposed") ||
+            strstr(str, "de.robv.android") ||
+            strstr(str, "me.weishu.epic") ||
+            strstr(str, "me.weishu.exposed")) {
             return nullptr;
         }
     }
-    jobject result = orig_findLoadedClass(env, obj, class_loader, name);
-    env->ReleaseStringUTFChars(name, nameC);
-    return result;
+    return orig_findLoadedClass(env, obj, class_loader, name);
 }
 
 void VMClassLoaderHook::init(JNIEnv *env) {

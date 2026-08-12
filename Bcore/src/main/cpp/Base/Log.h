@@ -1,18 +1,16 @@
+#ifndef BCORE_LOG_H
+#define BCORE_LOG_H
+
 #include <android/log.h>
 
-#define TAG "NativeCore"
-
-#if 1
-#define log_print_error(...) __android_log_print(ANDROID_LOG_ERROR, TAG, __VA_ARGS__)
-#define log_print_debug(...) __android_log_print(ANDROID_LOG_DEBUG, TAG, __VA_ARGS__)
-#else
-#define log_print_error(...)
+#ifndef LOG_TAG
+#define LOG_TAG "Bcore-Native"
 #endif
 
-#define ALOGE(...) log_print_error(__VA_ARGS__)
-#define ALOGD(...) log_print_debug(__VA_ARGS__)
+#define ALOGV(...) __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, __VA_ARGS__)
+#define ALOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define ALOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+#define ALOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
+#define ALOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
-#ifndef SPEED_LOG_H
-#define SPEED_LOG_H 1
-
-#endif
+#endif // BCORE_LOG_H

@@ -2,6 +2,8 @@
 #include "JniHook.h"
 #include "Log.h"
 #include "ArtMethod.h"
+#include <Utils/SafeJni.h>
+#include <vector>
 
 namespace blackbox {
 
@@ -23,25 +25,34 @@ static struct {
 
 } HookEnv;
 
-static const char *GetMethodDesc(JNIEnv *env, jobject javaMethod) {
+static std::string GetMethodDesc(JNIEnv *env, jobject javaMethod) {
+    if (javaMethod == nullptr) return "";
     auto desc = reinterpret_cast<jstring>(env->CallStaticObjectMethod(HookEnv.method_utils_class,
                                                                       HookEnv.get_method_desc_id,
                                                                       javaMethod));
-    return env->GetStringUTFChars(desc, JNI_FALSE);
+    if (desc == nullptr) return "";
+    ScopedUtfChars utf(env, desc);
+    return utf.c_str() ? utf.c_str() : "";
 }
 
-static const char *GetMethodDeclaringClass(JNIEnv *env, jobject javaMethod) {
+static std::string GetMethodDeclaringClass(JNIEnv *env, jobject javaMethod) {
+    if (javaMethod == nullptr) return "";
     auto desc = reinterpret_cast<jstring>(env->CallStaticObjectMethod(HookEnv.method_utils_class,
                                                                       HookEnv.get_method_declaring_class_id,
                                                                       javaMethod));
-    return env->GetStringUTFChars(desc, JNI_FALSE);
+    if (desc == nullptr) return "";
+    ScopedUtfChars utf(env, desc);
+    return utf.c_str() ? utf.c_str() : "";
 }
 
-static const char *GetMethodName(JNIEnv *env, jobject javaMethod) {
+static std::string GetMethodName(JNIEnv *env, jobject javaMethod) {
+    if (javaMethod == nullptr) return "";
     auto desc = reinterpret_cast<jstring>(env->CallStaticObjectMethod(HookEnv.method_utils_class,
                                                                       HookEnv.get_method_name_id,
                                                                       javaMethod));
-    return env->GetStringUTFChars(desc, JNI_FALSE);
+    if (desc == nullptr) return "";
+    ScopedUtfChars utf(env, desc);
+    return utf.c_str() ? utf.c_str() : "";
 }
 
 inline static uint32_t GetAccessFlags(const char *art_method) {
@@ -122,10 +133,11 @@ static bool CheckFlags(void *artMethod) {
 
 void JniHook::HookJniFun(JNIEnv *env, jobject java_method, void *new_fun,
                          void **orig_fun, bool is_static) {
-    const char *class_name = GetMethodDeclaringClass(env, java_method);
-    const char *method_name = GetMethodName(env, java_method);
-    const char *sign = GetMethodDesc(env, java_method);
-    HookJniFun(env, class_name, method_name, sign, new_fun, orig_fun, is_static);
+    std::string class_name = GetMethodDeclaringClass(env, java_method);
+    std::string method_name = GetMethodName(env, java_method);
+    std::string sign = GetMethodDesc(env, java_method);
+    if (class_name.empty() || method_name.empty() || sign.empty()) return;
+    HookJniFun(env, class_name.c_str(), method_name.c_str(), sign.c_str(), new_fun, orig_fun, is_static);
 }
 
 void JniHook::HookJniFun(JNIEnv *env, const char *class_name, const char *method_name, const char *sign,
@@ -284,7 +296,16 @@ void JniHook::InitJniHook(JNIEnv *env, int api_level) {
         return;
     }
 
-    HookEnv.method_utils_class = env->FindClass("top/niunaijun/jnihook/MethodUtils");
+    jclass methodUtilsLocal = env->FindClass("top/niunaijun/jnihook/MethodUtils");
+    if (methodUtilsLocal == nullptr) {
+        ALOGE("Failed to find MethodUtils class");
+        return;
+    }
+    if (HookEnv.method_utils_class != nullptr) {
+        env->DeleteGlobalRef(HookEnv.method_utils_class);
+        HookEnv.method_utils_class = nullptr;
+    }
+    HookEnv.method_utils_class = (jclass)env->NewGlobalRef(methodUtilsLocal);
     HookEnv.get_method_desc_id = env->GetStaticMethodID(HookEnv.method_utils_class, "getDesc",
                                                         "(Ljava/lang/reflect/Method;)Ljava/lang/String;");
     HookEnv.get_method_declaring_class_id = env->GetStaticMethodID(HookEnv.method_utils_class,
@@ -292,6 +313,19 @@ void JniHook::InitJniHook(JNIEnv *env, int api_level) {
                                                                    "(Ljava/lang/reflect/Method;)Ljava/lang/String;");
     HookEnv.get_method_name_id = env->GetStaticMethodID(HookEnv.method_utils_class, "getMethodName",
                                                         "(Ljava/lang/reflect/Method;)Ljava/lang/String;");
+
+    if (HookEnv.get_method_desc_id == nullptr || 
+        HookEnv.get_method_declaring_class_id == nullptr || 
+        HookEnv.get_method_name_id == nullptr) {
+        ALOGE("Failed to find some MethodUtils methods");
+    }
+}
+
+void JniHook::shutdown(JNIEnv *env) {
+    if (env != nullptr && HookEnv.method_utils_class != nullptr) {
+        env->DeleteGlobalRef(HookEnv.method_utils_class);
+        HookEnv.method_utils_class = nullptr;
+    }
 }
 
 } // namespace blackbox

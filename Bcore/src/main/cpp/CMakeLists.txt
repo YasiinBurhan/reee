@@ -27,6 +27,7 @@ add_library(blackbox SHARED
     Utils/VirtualSpoof.cpp
     Utils/HexDump.cpp
     Utils/AntiDetection.cpp
+    Utils/TestHarness.cpp
     Hook/VMClassLoaderHook.cpp
     Hook/UnixFileSystemHook.cpp
     Hook/BinderHook.cpp
@@ -40,14 +41,26 @@ add_library(blackbox SHARED
 target_include_directories(blackbox PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/Base ${CMAKE_CURRENT_SOURCE_DIR}/Jni ${CMAKE_CURRENT_SOURCE_DIR}/imgui ${CMAKE_CURRENT_SOURCE_DIR}/imgui_render ${CMAKE_CURRENT_SOURCE_DIR}/il2cpp ${CMAKE_CURRENT_SOURCE_DIR}/shadowhook/shadowhook/src/main/cpp/include ${CMAKE_CURRENT_SOURCE_DIR}/shadowhook/shadowhook/src/main/cpp)
 
 target_compile_options(blackbox PRIVATE
-    -Wno-error=format-security
+    -Wall
+    -Wextra
+    -Wno-unused-parameter
     -fvisibility=hidden
     -ffunction-sections
     -fdata-sections
-    -w
     -std=c++17
     -fms-extensions
+    -fPIC
 )
+
+if(NOT DEFINED BCORE_DIAGNOSTICS)
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        set(BCORE_DIAGNOSTICS 1)
+    else()
+        set(BCORE_DIAGNOSTICS 0)
+    endif()
+endif()
+
+target_compile_definitions(blackbox PRIVATE BCORE_DIAGNOSTICS=${BCORE_DIAGNOSTICS})
 
 target_link_options(blackbox PRIVATE
     -Wl,--gc-sections,--strip-all,-z,max-page-size=16384

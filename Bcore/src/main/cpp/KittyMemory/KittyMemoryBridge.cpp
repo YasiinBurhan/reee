@@ -1,5 +1,6 @@
 #include <jni.h>
 #include <android/log.h>
+#include <Utils/SafeJni.h>
 #include "MemoryPatch.h"
 
 #define TAG "KittyMemoryBridge"
@@ -15,12 +16,16 @@ Java_com_equinox_virtual_helper_ModInjectionManager_nativeApplyMemoryPatch(
         jstring jlibName,
         jlong jOffset,
         jstring jHexBytes) {
-    const char *libName = env->GetStringUTFChars(jlibName, nullptr);
-    const char *hexBytes = env->GetStringUTFChars(jHexBytes, nullptr);
+    if (jlibName == nullptr || jHexBytes == nullptr) return 0;
 
-    ALOGD("%s: Applying patch to lib: %s at offset: 0x%lX with hex: %s", TAG, libName, (unsigned long)jOffset, hexBytes);
+    blackbox::ScopedUtfChars libName(env, jlibName);
+    blackbox::ScopedUtfChars hexBytes(env, jHexBytes);
 
-    auto patch = KittyMemory::MemoryPatch::createWithHex(libName, (uintptr_t)jOffset, std::string(hexBytes));
+    if (libName.c_str() == nullptr || hexBytes.c_str() == nullptr) return 0;
+
+    ALOGD("%s: Applying patch to lib: %s at offset: 0x%lX with hex: %s", TAG, libName.c_str(), (unsigned long)jOffset, hexBytes.c_str());
+
+    auto patch = KittyMemory::MemoryPatch::createWithHex(libName.c_str(), (uintptr_t)jOffset, std::string(hexBytes.c_str()));
 
     jlong patchPtr = 0;
     if (patch.isValid()) {
@@ -32,11 +37,9 @@ Java_com_equinox_virtual_helper_ModInjectionManager_nativeApplyMemoryPatch(
             ALOGE("%s: Failed to modify memory for patch!", TAG);
         }
     } else {
-        ALOGE("%s: Invalid memory patch or library map not found for %s", TAG, libName);
+        ALOGE("%s: Invalid memory patch or library map not found for %s", TAG, libName.c_str());
     }
 
-    env->ReleaseStringUTFChars(jlibName, libName);
-    env->ReleaseStringUTFChars(jHexBytes, hexBytes);
     return patchPtr;
 }
 
