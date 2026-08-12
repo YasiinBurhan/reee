@@ -34,6 +34,16 @@ import top.niunaijun.blackbox.utils.Slog;
 public class BLocationManagerService extends IBLocationManagerService.Stub implements ISystemService {
     public static final String TAG = "BLocationManagerService";
 
+    public static class LocationRecord {
+        public String packageName;
+        public int userId;
+
+        public LocationRecord(String packageName, int userId) {
+            this.packageName = packageName;
+            this.userId = userId;
+        }
+    }
+
     private static final BLocationManagerService sService = new BLocationManagerService();
     private final SparseArray<HashMap<String, BLocationConfig>> mLocationConfigs = new SparseArray<>();
     private final BLocationConfig mGlobalConfig = new BLocationConfig();
