@@ -231,14 +231,6 @@ class EQuinoxApp : Application() {
             } catch (e: Throwable) {
                 Log.w(TAG, "VirtualSpoof initSpoof warning: ${e.message}")
             }
-
-            if (BuildConfig.DEBUG) {
-                try {
-                    BcoreDiagnosticsRunner.runDiagnostics()
-                } catch (e: Throwable) {
-                    Log.e(TAG, "Diagnostics runner execution failed: ${e.message}", e)
-                }
-            }
         }
         try {
             BlackBoxCore.get().doCreate()

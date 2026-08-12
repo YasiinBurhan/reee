@@ -23,7 +23,7 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "Bcore"
+rootProject.name = "EQuinox Virtual"
 
 include(":app")
 include(":black-reflection")

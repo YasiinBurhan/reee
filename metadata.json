@@ -1,5 +1,5 @@
 {
-  "name": "Bcore",
+  "name": "EQuinox Virtual",
   "description": "Android virtual sandbox app",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
