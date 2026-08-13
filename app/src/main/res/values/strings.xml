@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">EQuinox Virtual</string>
+    <string name="black_box_service_name">:black</string>
+    <string name="app_icon">default icon</string>
 </resources>

@@ -11,15 +11,6 @@ add_subdirectory(imgui_render)
 add_library(blackbox SHARED
     Core/BoxCore.cpp
     Jni/JniBridge.cpp
-    KittyMemory/KittyMemory.cpp
-    KittyMemory/KittyScanner.cpp
-    KittyMemory/KittyUtils.cpp
-    KittyMemory/KittyIOFile.cpp
-    KittyMemory/KittyAsm.cpp
-    KittyMemory/KittyPtrValidator.cpp
-    KittyMemory/MemoryBackup.cpp
-    KittyMemory/MemoryPatch.cpp
-    KittyMemory/KittyMemoryBridge.cpp
     Base/hidden_api.cpp
     Base/IO.cpp
     Hook/DexFileHook.cpp
