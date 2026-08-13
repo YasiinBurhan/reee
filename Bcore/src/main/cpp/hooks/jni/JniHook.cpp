@@ -85,7 +85,7 @@ inline static bool HasAccessFlag(char *art_method, uint32_t flag) {
     return (flags & flag) == flag;
 }
 
-inline static bool IsNativeMethod(char *art_method) {
+[[maybe_unused]] inline static bool IsNativeMethod(char *art_method) {
     try {
         return HasAccessFlag(art_method, kAccNative);
     } catch (...) {
@@ -190,11 +190,11 @@ void JniHook::HookJniFun(JNIEnv *env, const char *class_name, const char *method
     ALOGD("register class：%s, method：%s success!", class_name, method_name);
 }
 
-__attribute__((section (".mytext"))) JNICALL void native_offset(JNIEnv *env, jclass obj) {}
+__attribute__((section (".mytext"))) JNICALL void native_offset(JNIEnv * /*env*/, jclass /*obj*/) {}
 
-__attribute__((section (".mytext"))) JNICALL void native_offset2(JNIEnv *env, jclass obj) {}
+__attribute__((section (".mytext"))) JNICALL void native_offset2(JNIEnv * /*env*/, jclass /*obj*/) {}
 
-__attribute__((section (".mytext"))) JNICALL void set_method_accessible(JNIEnv *env, jclass obj, jclass clazz, jobject method) {
+__attribute__((section (".mytext"))) JNICALL void set_method_accessible(JNIEnv *env, jclass /*obj*/, jclass clazz, jobject method) {
     jmethodID methodId = env->FromReflectedMethod(method);
     char *art_method = static_cast<char *>(GetArtMethod(env, clazz, methodId));
     AddAccessFlag(art_method, kAccPublic);
@@ -203,7 +203,7 @@ __attribute__((section (".mytext"))) JNICALL void set_method_accessible(JNIEnv *
     }
 }
 
-__attribute__((section (".mytext"))) JNICALL void set_field_accessible(JNIEnv *env, jclass obj, jclass clazz, jobject field) {
+__attribute__((section (".mytext"))) JNICALL void set_field_accessible(JNIEnv *env, jclass /*obj*/, jclass /*clazz*/, jobject field) {
     char *artField = static_cast<char *>(GetFieldMethod(env, field));
     AddAccessFlag(artField, kAccPublic);
     if (HookEnv.api_level >= __ANDROID_API_Q__) {
@@ -251,7 +251,7 @@ void JniHook::InitJniHook(JNIEnv *env, int api_level) {
     void *nativeOffset2 = GetArtMethod(env, clazz, nativeOffset2Id);
     HookEnv.art_method_size = (size_t) nativeOffset2 - (size_t) nativeOffset;
 
-    int i = 0;
+    uint32_t i = 0;
     auto artMethod = reinterpret_cast<uintptr_t *>(nativeOffset);
     for (i = 0; i < HookEnv.art_method_size; ++i) {
         if (reinterpret_cast<void *>(artMethod[i]) == native_offset) {

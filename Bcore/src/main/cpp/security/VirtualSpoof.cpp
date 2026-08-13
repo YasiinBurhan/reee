@@ -46,6 +46,6 @@ void VirtualSpoof::init() {
 
 } // namespace blackbox
 
-extern "C" JNIEXPORT void JNICALL Java_com_equinox_virtual_core_VirtualSpoof_initSpoof(JNIEnv *env, jclass clazz) {
+extern "C" JNIEXPORT void JNICALL Java_com_equinox_virtual_core_VirtualSpoof_initSpoof(JNIEnv * /*env*/, jclass /*clazz*/) {
     blackbox::VirtualSpoof::init();
 }

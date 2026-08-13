@@ -13,26 +13,26 @@
 extern "C" {
 
 JNIEXPORT void JNICALL
-Java_com_equinox_virtual_core_NativeCore_initMenuModSurfaceHook(JNIEnv *env, jclass clazz, jstring package_name) {
+Java_com_equinox_virtual_core_NativeCore_initMenuModSurfaceHook(JNIEnv *env, jclass /*clazz*/, jstring package_name) {
     blackbox::ScopedUtfChars pkg(env, package_name);
     ALOGD("Initializing MenuMod surface hook for: %s", pkg.c_str());
     blackbox::ImGuiHook::init(pkg.c_str());
 }
 
 JNIEXPORT void JNICALL
-Java_com_equinox_virtual_core_NativeCore_setMenuModHookEnabled(JNIEnv *env, jclass clazz, jboolean enabled) {
+Java_com_equinox_virtual_core_NativeCore_setMenuModHookEnabled(JNIEnv * /*env*/, jclass /*clazz*/, jboolean enabled) {
     ALOGD("Setting MenuMod surface hook enabled: %d", enabled);
     blackbox::ImGuiHook::setEnabled(enabled);
 }
 
 JNIEXPORT void JNICALL
-Java_com_equinox_virtual_core_NativeCore_hideXposed(JNIEnv *env, jclass clazz) {
+Java_com_equinox_virtual_core_NativeCore_hideXposed(JNIEnv * /*env*/, jclass /*clazz*/) {
     ALOGD("set hideXposed");
     blackbox::VMClassLoaderHook::hideXposed();
 }
 
 JNIEXPORT void JNICALL
-Java_com_equinox_virtual_core_NativeCore_init(JNIEnv *env, jclass clazz, jint api_level) {
+Java_com_equinox_virtual_core_NativeCore_init(JNIEnv *env, jclass /*clazz*/, jint api_level) {
     ALOGD("NativeCore init.");
     blackbox::BoxCore::api_level = api_level;
     
@@ -77,7 +77,7 @@ Java_com_equinox_virtual_core_NativeCore_init(JNIEnv *env, jclass clazz, jint ap
 }
 
 JNIEXPORT void JNICALL
-Java_com_equinox_virtual_core_NativeCore_addIORule(JNIEnv *env, jclass clazz, jstring target_path,
+Java_com_equinox_virtual_core_NativeCore_addIORule(JNIEnv *env, jclass /*clazz*/, jstring target_path,
                                                    jstring relocate_path) {
     ALOGD("set addIORule");
     blackbox::ScopedUtfChars target(env, target_path);
@@ -86,14 +86,14 @@ Java_com_equinox_virtual_core_NativeCore_addIORule(JNIEnv *env, jclass clazz, js
 }
 
 JNIEXPORT void JNICALL
-Java_com_equinox_virtual_core_NativeCore_enableIO(JNIEnv *env, jclass clazz) {
+Java_com_equinox_virtual_core_NativeCore_enableIO(JNIEnv *env, jclass /*clazz*/) {
     ALOGD("set enableIO");
     blackbox::IO::init(env);
     blackbox::BoxCore::nativeHook(env);
 }
 
 JNIEXPORT jboolean JNICALL
-Java_com_equinox_virtual_core_NativeCore_disableHiddenApi(JNIEnv *env, jclass clazz) {
+Java_com_equinox_virtual_core_NativeCore_disableHiddenApi(JNIEnv *env, jclass /*clazz*/) {
     ALOGD("set disableHiddenApi");
     if (!blackbox::HiddenApi::disableHiddenApi(env)) {
         ALOGD("set disableHiddenApi Fail!!!");
@@ -103,7 +103,7 @@ Java_com_equinox_virtual_core_NativeCore_disableHiddenApi(JNIEnv *env, jclass cl
 }
 
 JNIEXPORT jboolean JNICALL
-Java_com_equinox_virtual_core_NativeCore_disableResourceLoading(JNIEnv *env, jclass clazz) {
+Java_com_equinox_virtual_core_NativeCore_disableResourceLoading(JNIEnv * /*env*/, jclass /*clazz*/) {
     ALOGD("set disableResourceLoading");
     if (!blackbox::HiddenApi::disableResourceLoading()) {
         ALOGD("set disableResourceLoading Fail!!!");
@@ -113,7 +113,7 @@ Java_com_equinox_virtual_core_NativeCore_disableResourceLoading(JNIEnv *env, jcl
 }
 
 JNIEXPORT jstring JNICALL
-Java_com_equinox_virtual_core_NativeCore_runDiagnosticsTest(JNIEnv *env, jclass clazz) {
+Java_com_equinox_virtual_core_NativeCore_runDiagnosticsTest(JNIEnv *env, jclass /*clazz*/) {
 #if BCORE_DIAGNOSTICS
     std::string result = blackbox::runDiagnosticsTest();
     return env->NewStringUTF(result.c_str());
@@ -124,7 +124,7 @@ Java_com_equinox_virtual_core_NativeCore_runDiagnosticsTest(JNIEnv *env, jclass 
 
 } // extern "C"
 
-JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
+JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void * /*reserved*/) {
     JNIEnv *env;
     blackbox::BoxCore::vm = vm;
     if (vm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6) != JNI_OK) {
@@ -133,7 +133,7 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
     return JNI_VERSION_1_6;
 }
 
-JNIEXPORT void JNI_OnUnload(JavaVM *vm, void *reserved) {
+JNIEXPORT void JNI_OnUnload(JavaVM *vm, void * /*reserved*/) {
     JNIEnv *env = nullptr;
     if (vm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6) == JNI_OK) {
         blackbox::BoxCore::shutdown(env);

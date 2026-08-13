@@ -21,8 +21,6 @@ struct SpoofedProp {
     const char* value;
 };
 
-static int (*orig_system_property_get)(const char *name, char *value) = nullptr;
-
 static const char* blocked_files[] = {
     "/system/xbin/su",
     "/system/bin/su",

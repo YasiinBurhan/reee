@@ -6,6 +6,7 @@
 #include "hooks/jni/JniHook.h"
 #include "utils/Log.h"
 
+#include <cstring>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -137,7 +138,7 @@ std::string runDiagnosticsTest() {
         const char* redirected = IO::redirectPath("/data/user/0/test_src/file.txt");
         bool match_ok = (redirected != nullptr && std::strstr(redirected, "test_dst") != nullptr);
         
-        if (redirected != nullptr && redirected != (const char*)"/data/user/0/test_src/file.txt") {
+        if (redirected != nullptr && strcmp(redirected, "/data/user/0/test_src/file.txt") != 0) {
             free((void*)redirected);
         }
         

@@ -2,7 +2,7 @@
 
 namespace blackbox {
 
-void BaseHook::init(JNIEnv *env) {
+void BaseHook::init(JNIEnv * /*env*/) {
     // Intentionally empty base implementation
 }
 
