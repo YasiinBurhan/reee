@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -68,6 +69,7 @@ import android.net.Uri
 import android.provider.Settings
 import com.equinox.virtual.model.VirtualAppInfo
 import com.equinox.virtual.viewmodel.BlackBoxViewModel
+import com.equinox.virtual.manager.VirtualSpaceManager
 import kotlinx.coroutines.flow.collectLatest
 
 import androidx.compose.material3.LargeTopAppBar
@@ -119,6 +121,9 @@ fun BlackBoxMainScreen(
 
     // Sub-screens state for settings
     var activeSettingsSubScreen by remember { mutableStateOf<String?>(null) }
+    
+    val virtualSpaceManager = remember { VirtualSpaceManager(context.applicationContext as android.app.Application) }
+    var hasFilePermission by remember { mutableStateOf(virtualSpaceManager.hasAllFilesAccess()) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -129,7 +134,13 @@ fun BlackBoxMainScreen(
         }
     }
 
-    Scaffold(
+    if (!hasFilePermission && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+        PermissionRequestOverlay(
+            onGrant = { virtualSpaceManager.requestAllFilesAccess() },
+            onCheckAgain = { hasFilePermission = virtualSpaceManager.hasAllFilesAccess() }
+        )
+    } else {
+        Scaffold(
         modifier = modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
@@ -386,6 +397,7 @@ fun BlackBoxMainScreen(
                             }
                         }
                     }
+                }
                 }
             }
         }
