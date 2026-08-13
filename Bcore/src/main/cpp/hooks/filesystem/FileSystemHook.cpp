@@ -85,21 +85,7 @@ static int new_open64(const char *pathname, int flags, ...) {
 }
 
 void FileSystemHook::init() {
-    ALOGD("FileSystemHook: Initializing file system hooks");
-    
-    void* stub_open = shadowhook_hook_sym_name("libc.so", "open", (void*)new_open, (void**)&orig_open);
-    if (stub_open) {
-        ALOGD("FileSystemHook: Successfully hooked open function");
-    } else {
-        ALOGE("FileSystemHook: Failed to hook open function");
-    }
-    
-    void* stub_open64 = shadowhook_hook_sym_name("libc.so", "open64", (void*)new_open64, (void**)&orig_open64);
-    if (stub_open64) {
-        ALOGD("FileSystemHook: Successfully hooked open64 function");
-    } else {
-        ALOGE("FileSystemHook: Failed to hook open64 function");
-    }
+    ALOGD("FileSystemHook: File system hooks active via AntiDetection");
 }
 
 } // namespace blackbox

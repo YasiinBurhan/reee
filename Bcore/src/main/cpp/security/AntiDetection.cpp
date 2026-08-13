@@ -143,8 +143,21 @@ static int (*orig_stat)(const char *pathname, struct stat *buf) = nullptr;
 static int (*orig_lstat)(const char *pathname, struct stat *buf) = nullptr;
 static FILE* (*orig_fopen)(const char *pathname, const char *mode) = nullptr;
 static int (*orig_open)(const char *pathname, int flags, ...) = nullptr;
+static int (*orig_open64)(const char *pathname, int flags, ...) = nullptr;
 static ssize_t (*orig_readlink)(const char *pathname, char *buf, size_t bufsiz) = nullptr;
 static DIR* (*orig_opendir)(const char *name) = nullptr;
+
+static bool is_problematic_resource_path(const char* pathname) {
+    if (!pathname) return false;
+    if (strstr(pathname, "resource-cache") || 
+        strstr(pathname, "@idmap") || 
+        strstr(pathname, ".frro") ||
+        strstr(pathname, "systemui") ||
+        strstr(pathname, "data@resource-cache@")) {
+        return true;
+    }
+    return false;
+}
 
 static bool is_safe_path(const char* path) {
     if (!path) return false;
@@ -158,6 +171,10 @@ static bool is_safe_path(const char* path) {
 }
 
 static int my_access(const char *pathname, int mode) {
+    if (pathname && is_problematic_resource_path(pathname)) {
+        errno = ENOENT;
+        return -1;
+    }
     if (pathname && !is_safe_path(pathname) && (is_blocked_file(pathname) || is_blocked_package(pathname))) {
         errno = ENOENT;
         return -1;
@@ -172,6 +189,10 @@ static int my_access(const char *pathname, int mode) {
 }
 
 static int my_stat(const char *pathname, struct stat *buf) {
+    if (pathname && is_problematic_resource_path(pathname)) {
+        errno = ENOENT;
+        return -1;
+    }
     if (pathname && !is_safe_path(pathname) && (is_blocked_file(pathname) || is_blocked_package(pathname))) {
         errno = ENOENT;
         return -1;
@@ -186,6 +207,10 @@ static int my_stat(const char *pathname, struct stat *buf) {
 }
 
 static int my_lstat(const char *pathname, struct stat *buf) {
+    if (pathname && is_problematic_resource_path(pathname)) {
+        errno = ENOENT;
+        return -1;
+    }
     if (pathname && !is_safe_path(pathname) && (is_blocked_file(pathname) || is_blocked_package(pathname))) {
         errno = ENOENT;
         return -1;
@@ -200,6 +225,10 @@ static int my_lstat(const char *pathname, struct stat *buf) {
 }
 
 static FILE* my_fopen(const char *pathname, const char *mode) {
+    if (pathname && is_problematic_resource_path(pathname)) {
+        errno = ENOENT;
+        return nullptr;
+    }
     if (pathname && !is_safe_path(pathname) && (is_blocked_file(pathname) || is_blocked_package(pathname))) {
         errno = ENOENT;
         return nullptr;
@@ -214,6 +243,10 @@ static FILE* my_fopen(const char *pathname, const char *mode) {
 }
 
 static int my_open(const char *pathname, int flags, ...) {
+    if (pathname && is_problematic_resource_path(pathname)) {
+        errno = ENOENT;
+        return -1;
+    }
     if (pathname && !is_safe_path(pathname) && (is_blocked_file(pathname) || is_blocked_package(pathname))) {
         errno = ENOENT;
         return -1;
@@ -230,6 +263,35 @@ static int my_open(const char *pathname, int flags, ...) {
             res = orig_open(target, flags, mode);
         } else {
             res = orig_open(target, flags);
+        }
+    }
+    if (redirected && redirected != pathname) {
+        free((void*)redirected);
+    }
+    return res;
+}
+
+static int my_open64(const char *pathname, int flags, ...) {
+    if (pathname && is_problematic_resource_path(pathname)) {
+        errno = ENOENT;
+        return -1;
+    }
+    if (pathname && !is_safe_path(pathname) && (is_blocked_file(pathname) || is_blocked_package(pathname))) {
+        errno = ENOENT;
+        return -1;
+    }
+    const char *redirected = pathname ? IO::redirectPath(pathname) : nullptr;
+    const char *target = redirected ? redirected : pathname;
+    int res = -1;
+    if (orig_open64) {
+        if (flags & O_CREAT) {
+            va_list args;
+            va_start(args, flags);
+            mode_t mode = (mode_t) va_arg(args, int);
+            va_end(args);
+            res = orig_open64(target, flags, mode);
+        } else {
+            res = orig_open64(target, flags);
         }
     }
     if (redirected && redirected != pathname) {
@@ -274,6 +336,7 @@ static void install_file_hooks() {
     shadowhook_hook_sym_name("libc.so", "lstat", (void*)my_lstat, (void**)&orig_lstat);
     shadowhook_hook_sym_name("libc.so", "fopen", (void*)my_fopen, (void**)&orig_fopen);
     shadowhook_hook_sym_name("libc.so", "open", (void*)my_open, (void**)&orig_open);
+    shadowhook_hook_sym_name("libc.so", "open64", (void*)my_open64, (void**)&orig_open64);
     shadowhook_hook_sym_name("libc.so", "readlink", (void*)my_readlink, (void**)&orig_readlink);
     shadowhook_hook_sym_name("libc.so", "opendir", (void*)my_opendir, (void**)&orig_opendir);
 
