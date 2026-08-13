@@ -4,12 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import top.niunaijun.blackbox.core.system.ISystemService;
-import top.niunaijun.blackbox.core.system.pm.installer.CopyExecutor;
-import top.niunaijun.blackbox.core.system.pm.installer.CreatePackageExecutor;
-import top.niunaijun.blackbox.core.system.pm.installer.CreateUserExecutor;
 import top.niunaijun.blackbox.core.system.pm.installer.Executor;
-import top.niunaijun.blackbox.core.system.pm.installer.RemoveAppExecutor;
-import top.niunaijun.blackbox.core.system.pm.installer.RemoveUserExecutor;
 import top.niunaijun.blackbox.entity.pm.InstallOption;
 import top.niunaijun.blackbox.utils.Slog;
 
@@ -27,11 +22,11 @@ public class BPackageInstallerService extends IBPackageInstallerService.Stub imp
     public int installPackageAsUser(BPackageSettings ps, int userId) {
         List<Executor> executors = new ArrayList<>();
         
-        executors.add(new CreateUserExecutor());
+        executors.add(new Executor.CreateUserExecutor());
         
-        executors.add(new CreatePackageExecutor());
+        executors.add(new Executor.CreatePackageExecutor());
         
-        executors.add(new CopyExecutor());
+        executors.add(new Executor.CopyExecutor());
         InstallOption option = ps.installOption;
         for (Executor executor : executors) {
             int exec = executor.exec(ps, option, userId);
@@ -48,10 +43,10 @@ public class BPackageInstallerService extends IBPackageInstallerService.Stub imp
         List<Executor> executors = new ArrayList<>();
         if (removeApp) {
             
-            executors.add(new RemoveAppExecutor());
+            executors.add(new Executor.RemoveAppExecutor());
         }
         
-        executors.add(new RemoveUserExecutor());
+        executors.add(new Executor.RemoveUserExecutor());
         InstallOption option = ps.installOption;
         for (Executor executor : executors) {
             int exec = executor.exec(ps, option, userId);
@@ -67,9 +62,9 @@ public class BPackageInstallerService extends IBPackageInstallerService.Stub imp
     public int clearPackage(BPackageSettings ps, int userId) {
         List<Executor> executors = new ArrayList<>();
         
-        executors.add(new RemoveUserExecutor());
+        executors.add(new Executor.RemoveUserExecutor());
         
-        executors.add(new CreateUserExecutor());
+        executors.add(new Executor.CreateUserExecutor());
         InstallOption option = ps.installOption;
         for (Executor executor : executors) {
             int exec = executor.exec(ps, option, userId);
@@ -84,8 +79,8 @@ public class BPackageInstallerService extends IBPackageInstallerService.Stub imp
     @Override
     public int updatePackage(BPackageSettings ps) {
         List<Executor> executors = new ArrayList<>();
-        executors.add(new CreatePackageExecutor());
-        executors.add(new CopyExecutor());
+        executors.add(new Executor.CreatePackageExecutor());
+        executors.add(new Executor.CopyExecutor());
         InstallOption option = ps.installOption;
         for (Executor executor : executors) {
             int exec = executor.exec(ps, option, -1);

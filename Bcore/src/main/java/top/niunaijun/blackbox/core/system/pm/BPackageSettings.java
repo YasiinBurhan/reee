@@ -13,7 +13,6 @@ import java.util.Map;
 import top.niunaijun.blackbox.core.env.BEnvironment;
 import top.niunaijun.blackbox.core.system.user.BUserHandle;
 import top.niunaijun.blackbox.entity.pm.InstallOption;
-import top.niunaijun.blackbox.utils.CloseUtils;
 import top.niunaijun.blackbox.utils.FileUtils;
 
 
@@ -104,7 +103,7 @@ public class BPackageSettings implements Parcelable {
                 return false;
             } finally {
                 parcel.recycle();
-                CloseUtils.close(fileOutputStream);
+                FileUtils.closeQuietly(fileOutputStream);
             }
         }
     }

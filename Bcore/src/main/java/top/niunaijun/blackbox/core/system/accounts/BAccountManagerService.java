@@ -65,7 +65,6 @@ import top.niunaijun.blackbox.core.system.pm.BPackageManagerService;
 import top.niunaijun.blackbox.core.system.pm.PackageMonitor;
 import top.niunaijun.blackbox.core.system.user.BUserHandle;
 import top.niunaijun.blackbox.utils.ArrayUtils;
-import top.niunaijun.blackbox.utils.CloseUtils;
 import top.niunaijun.blackbox.utils.FileUtils;
 import top.niunaijun.blackbox.utils.Slog;
 import top.niunaijun.blackbox.utils.compat.AccountManagerCompat;
@@ -145,7 +144,7 @@ public class BAccountManagerService extends IBAccountManagerService.Stub impleme
             e.printStackTrace();
         } finally {
             parcel.recycle();
-            CloseUtils.close(is);
+            FileUtils.closeQuietly(is);
         }
     }
 
@@ -164,7 +163,7 @@ public class BAccountManagerService extends IBAccountManagerService.Stub impleme
                     e.printStackTrace();
                     atomicFile.failWrite(fileOutputStream);
                 } finally {
-                    CloseUtils.close(fileOutputStream);
+                    FileUtils.closeQuietly(fileOutputStream);
                 }
             } finally {
                 parcel.recycle();

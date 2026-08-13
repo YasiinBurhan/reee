@@ -17,7 +17,6 @@ import java.util.List;
 import top.niunaijun.blackbox.core.env.BEnvironment;
 import top.niunaijun.blackbox.core.system.ISystemService;
 import top.niunaijun.blackbox.core.system.pm.BPackageManagerService;
-import top.niunaijun.blackbox.utils.CloseUtils;
 import top.niunaijun.blackbox.utils.FileUtils;
 
 
@@ -118,7 +117,7 @@ public class BUserManagerService extends IBUserManagerService.Stub implements IS
                 e.printStackTrace();
                 atomicFile.failWrite(fileOutputStream);
             } finally {
-                CloseUtils.close(fileOutputStream);
+                FileUtils.closeQuietly(fileOutputStream);
             }
         } finally {
             parcel.recycle();
@@ -152,7 +151,7 @@ public class BUserManagerService extends IBUserManagerService.Stub implements IS
                 e.printStackTrace();
             } finally {
                 parcel.recycle();
-                CloseUtils.close(is);
+                FileUtils.closeQuietly(is);
             }
         }
     }

@@ -163,7 +163,7 @@ class EQuinoxApp : Application() {
                 }
 
                 override fun isEnableDaemonService(): Boolean {
-                    return false
+                    return true
                 }
 
                 override fun isUseVpnNetwork(): Boolean {

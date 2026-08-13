@@ -271,6 +271,18 @@ public class FileUtils {
         }
     }
 
+    public static void closeQuietly(Closeable... closeables) {
+        if (closeables == null) return;
+        for (Closeable closeable : closeables) {
+            if (closeable != null) {
+                try {
+                    closeable.close();
+                } catch (Exception ignored) {
+                }
+            }
+        }
+    }
+
     public static int peekInt(byte[] bytes, int value, ByteOrder endian) {
         int v2;
         int v0;

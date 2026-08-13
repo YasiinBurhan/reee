@@ -52,7 +52,7 @@ public class AbiUtils {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            CloseUtils.close(zipFile);
+            FileUtils.closeQuietly(zipFile);
         }
     }
 

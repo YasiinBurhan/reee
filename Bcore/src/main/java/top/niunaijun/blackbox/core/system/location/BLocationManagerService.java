@@ -26,7 +26,6 @@ import top.niunaijun.blackbox.entity.location.BCell;
 import top.niunaijun.blackbox.entity.location.BLocation;
 import top.niunaijun.blackbox.entity.location.BLocationConfig;
 import top.niunaijun.blackbox.fake.frameworks.BLocationManager;
-import top.niunaijun.blackbox.utils.CloseUtils;
 import top.niunaijun.blackbox.utils.FileUtils;
 import top.niunaijun.blackbox.utils.Slog;
 
@@ -281,7 +280,7 @@ public class BLocationManagerService extends IBLocationManagerService.Stub imple
                     atomicFile.failWrite(fileOutputStream);
                 } finally {
                     parcel.recycle();
-                    CloseUtils.close(fileOutputStream);
+                    FileUtils.closeQuietly(fileOutputStream);
                 }
             }
         }
@@ -320,7 +319,7 @@ public class BLocationManagerService extends IBLocationManagerService.Stub imple
             FileUtils.deleteDir(BEnvironment.getFakeLocationConf());
         } finally {
             parcel.recycle();
-            CloseUtils.close(is);
+            FileUtils.closeQuietly(is);
         }
     }
 
