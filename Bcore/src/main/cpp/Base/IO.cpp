@@ -1,13 +1,16 @@
 #include "IO.h"
 #include "Log.h"
 #include <Core/BoxCore.h>
+#include <Base/JniUtils.h>
 #include <cstring>
 #include <list>
+#include <mutex>
 
 namespace blackbox {
 
 static jmethodID getAbsolutePathMethodId;
 static std::list<IO::RelocateInfo> relocate_rule;
+static std::mutex relocate_rule_mutex;
 
 static char *replace(const char *str, const char *src, const char *dst) {
     const char *pos = str;
@@ -65,11 +68,11 @@ const char *IO::redirectPath(const char *__path) {
         return "/dev/null";
     }
 
-    std::list<IO::RelocateInfo>::iterator iterator;
-    for (iterator = relocate_rule.begin(); iterator != relocate_rule.end(); ++iterator) {
-        IO::RelocateInfo info = *iterator;
-        if (strstr(__path, info.targetPath) && !strstr(__path, "/blackbox/")) {
-            char *ret = replace(__path, info.targetPath, info.relocatePath);
+    std::lock_guard<std::mutex> lock(relocate_rule_mutex);
+    for (auto iterator = relocate_rule.begin(); iterator != relocate_rule.end(); ++iterator) {
+        const IO::RelocateInfo &info = *iterator;
+        if (strstr(__path, info.targetPath.c_str()) && !strstr(__path, "/blackbox/")) {
+            char *ret = replace(__path, info.targetPath.c_str(), info.relocatePath.c_str());
             return ret;
         }
     }
@@ -85,15 +88,28 @@ jobject IO::redirectPath(JNIEnv *env, jobject path) {
 }
 
 void IO::addRule(const char *targetPath, const char *relocatePath) {
+    std::lock_guard<std::mutex> lock(relocate_rule_mutex);
     IO::RelocateInfo info{};
-    info.targetPath = targetPath;
-    info.relocatePath = relocatePath;
+    info.targetPath = targetPath ? targetPath : "";
+    info.relocatePath = relocatePath ? relocatePath : "";
     relocate_rule.push_back(info);
 }
 
 void IO::init(JNIEnv *env) {
-    jclass tmpFile = env->FindClass("java/io/File");
-    getAbsolutePathMethodId = env->GetMethodID(tmpFile, "getAbsolutePath", "()Ljava/lang/String;");
+    ScopedLocalRef<jclass> tmpFile(env, env->FindClass("java/io/File"));
+    if (!tmpFile.empty()) {
+        getAbsolutePathMethodId = env->GetMethodID(tmpFile.get(), "getAbsolutePath", "()Ljava/lang/String;");
+    }
+}
+
+std::list<IO::RelocateInfo> IO::getRules() {
+    std::lock_guard<std::mutex> lock(relocate_rule_mutex);
+    return relocate_rule;
+}
+
+void IO::setRules(const std::list<IO::RelocateInfo> &rules) {
+    std::lock_guard<std::mutex> lock(relocate_rule_mutex);
+    relocate_rule = rules;
 }
 
 } // namespace blackbox

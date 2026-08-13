@@ -24,9 +24,21 @@ android {
     }
 
     buildTypes {
+        debug {
+            externalNativeBuild {
+                cmake {
+                    arguments("-DBCORE_DIAGNOSTICS=ON")
+                }
+            }
+        }
         release {
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            externalNativeBuild {
+                cmake {
+                    arguments("-DBCORE_DIAGNOSTICS=OFF")
+                }
+            }
         }
     }
 

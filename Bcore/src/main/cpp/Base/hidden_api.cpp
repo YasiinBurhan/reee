@@ -4,6 +4,7 @@
 #include "shadowhook.h"
 #include "hidden_api.h"
 #include "Log.h"
+#include "JniUtils.h"
 
 namespace blackbox {
 
@@ -45,26 +46,26 @@ bool HiddenApi::disableHiddenApi(JNIEnv *env) {
         return false;
     }
 
-    jclass stringClass = env->FindClass("java/lang/String");
-    if (!stringClass) {
+    ScopedLocalRef<jclass> stringClass(env, env->FindClass("java/lang/String"));
+    if (stringClass.empty()) {
         ALOGE("HiddenAPI: Failed to find String class");
         return false;
     }
 
-    jstring wildcard = env->NewStringUTF("L");
-    if (!wildcard) {
+    ScopedLocalRef<jstring> wildcard(env, env->NewStringUTF("L"));
+    if (wildcard.empty()) {
         ALOGE("HiddenAPI: Failed to create wildcard string");
         return false;
     }
 
-    jobjectArray args = env->NewObjectArray(1, stringClass, wildcard);
-    if (!args) {
+    ScopedLocalRef<jobjectArray> args(env, env->NewObjectArray(1, stringClass.get(), wildcard.get()));
+    if (args.empty()) {
         ALOGE("HiddenAPI: Failed to create args array");
         return false;
     }
 
     auto func = reinterpret_cast<void (*)(JNIEnv *, jclass, jobjectArray)>(addr);
-    func(env, stringClass, args);
+    func(env, stringClass.get(), args.get());
     ALOGD("HiddenAPI: Successfully disabled hidden API restrictions");
     return true;
 }

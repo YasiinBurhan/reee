@@ -7,6 +7,10 @@
 #include <cstring>
 #include <cerrno>
 
+#ifndef O_TMPFILE
+#define O_TMPFILE 020200000
+#endif
+
 namespace blackbox {
 
 static int (*orig_open)(const char *pathname, int flags, ...) = nullptr;
@@ -25,12 +29,15 @@ static int new_open(const char *pathname, int flags, ...) {
         }
     }
     
-    va_list args;
-    va_start(args, flags);
-    mode_t mode = va_arg(args, mode_t);
-    va_end(args);
-    
-    return orig_open(pathname, flags, mode);
+    if ((flags & O_CREAT) || (flags & O_TMPFILE)) {
+        va_list args;
+        va_start(args, flags);
+        mode_t mode = va_arg(args, mode_t);
+        va_end(args);
+        return orig_open(pathname, flags, mode);
+    } else {
+        return orig_open(pathname, flags);
+    }
 }
 
 static int new_open64(const char *pathname, int flags, ...) {
@@ -46,38 +53,33 @@ static int new_open64(const char *pathname, int flags, ...) {
         }
     }
     
-    va_list args;
-    va_start(args, flags);
-    mode_t mode = va_arg(args, mode_t);
-    va_end(args);
-    
-    return orig_open64(pathname, flags, mode);
+    if ((flags & O_CREAT) || (flags & O_TMPFILE)) {
+        va_list args;
+        va_start(args, flags);
+        mode_t mode = va_arg(args, mode_t);
+        va_end(args);
+        return orig_open64(pathname, flags, mode);
+    } else {
+        return orig_open64(pathname, flags);
+    }
 }
 
 void FileSystemHook::init() {
     ALOGD("FileSystemHook: Initializing file system hooks");
     
-    void* handle = shadowhook_dlopen("libc.so");
-    if (!handle) {
-        ALOGE("FileSystemHook: Failed to open libc.so");
-        return;
-    }
-    
-    orig_open = (int (*)(const char*, int, ...))shadowhook_dlsym(handle, "open");
-    if (orig_open) {
-        ALOGD("FileSystemHook: Found open function at %p", orig_open);
+    void* stub_open = shadowhook_hook_sym_name("libc.so", "open", (void*)new_open, (void**)&orig_open);
+    if (stub_open) {
+        ALOGD("FileSystemHook: Successfully hooked open function");
     } else {
-        ALOGE("FileSystemHook: Failed to find open function");
+        ALOGE("FileSystemHook: Failed to hook open function");
     }
     
-    orig_open64 = (int (*)(const char*, int, ...))shadowhook_dlsym(handle, "open64");
-    if (orig_open64) {
-        ALOGD("FileSystemHook: Found open64 function at %p", orig_open64);
+    void* stub_open64 = shadowhook_hook_sym_name("libc.so", "open64", (void*)new_open64, (void**)&orig_open64);
+    if (stub_open64) {
+        ALOGD("FileSystemHook: Successfully hooked open64 function");
     } else {
-        ALOGE("FileSystemHook: Failed to find open64 function");
+        ALOGE("FileSystemHook: Failed to hook open64 function");
     }
-    
-    shadowhook_dlclose(handle);
 }
 
 } // namespace blackbox

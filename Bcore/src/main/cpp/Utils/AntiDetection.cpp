@@ -213,12 +213,16 @@ static DIR* my_opendir(const char *name) {
 }
 
 static void install_file_hooks() {
-    void* handle = shadowhook_dlopen("libc.so");
-    if (!handle) {
-        LOGD("shadowhook_dlopen failed for libc.so");
-        return;
-    }
-    shadowhook_dlclose(handle);
+    LOGD("AntiDetection: Hooking file system detection functions...");
+    
+    shadowhook_hook_sym_name("libc.so", "access", (void*)my_access, (void**)&orig_access);
+    shadowhook_hook_sym_name("libc.so", "stat", (void*)my_stat, (void**)&orig_stat);
+    shadowhook_hook_sym_name("libc.so", "lstat", (void*)my_lstat, (void**)&orig_lstat);
+    shadowhook_hook_sym_name("libc.so", "fopen", (void*)my_fopen, (void**)&orig_fopen);
+    shadowhook_hook_sym_name("libc.so", "open", (void*)my_open, (void**)&orig_open);
+    shadowhook_hook_sym_name("libc.so", "readlink", (void*)my_readlink, (void**)&orig_readlink);
+    shadowhook_hook_sym_name("libc.so", "opendir", (void*)my_opendir, (void**)&orig_opendir);
+
     LOGD("File system hooks installed via shadowhook");
 }
 

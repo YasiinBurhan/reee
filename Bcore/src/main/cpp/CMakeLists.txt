@@ -10,6 +10,7 @@ add_subdirectory(imgui_render)
 # blackbox shared library
 add_library(blackbox SHARED
     Core/BoxCore.cpp
+    Core/Diagnostics.cpp
     Jni/JniBridge.cpp
     Base/hidden_api.cpp
     Base/IO.cpp
@@ -30,12 +31,20 @@ add_library(blackbox SHARED
 
 target_include_directories(blackbox PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/Base ${CMAKE_CURRENT_SOURCE_DIR}/Jni ${CMAKE_CURRENT_SOURCE_DIR}/imgui ${CMAKE_CURRENT_SOURCE_DIR}/imgui_render ${CMAKE_CURRENT_SOURCE_DIR}/il2cpp ${CMAKE_CURRENT_SOURCE_DIR}/shadowhook/shadowhook/src/main/cpp/include ${CMAKE_CURRENT_SOURCE_DIR}/shadowhook/shadowhook/src/main/cpp)
 
+option(BCORE_DIAGNOSTICS "Enable diagnostics support" OFF)
+if(BCORE_DIAGNOSTICS)
+    target_compile_definitions(blackbox PRIVATE BCORE_DIAGNOSTICS=1)
+else()
+    target_compile_definitions(blackbox PRIVATE BCORE_DIAGNOSTICS=0)
+endif()
+
 target_compile_options(blackbox PRIVATE
     -Wno-error=format-security
     -fvisibility=hidden
     -ffunction-sections
     -fdata-sections
-    -w
+    -Wall
+    -Wextra
     -std=c++17
     -fms-extensions
 )

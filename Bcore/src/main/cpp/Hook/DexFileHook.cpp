@@ -3,20 +3,22 @@
 #include <Core/BoxCore.h>
 #include "UnixFileSystemHook.h"
 #include <JniHook/JniHook.h>
+#include <Base/JniUtils.h>
 #include <sys/stat.h>
 #include "Log.h"
 
 namespace blackbox {
 
 HOOK_JNI(jobject, openDexFileNative, JNIEnv *env, jobject obj, jstring sourceName, jstring outputName, jint flags, jobject loader, jobject elements) {
-    const char *sourceNameC = env->GetStringUTFChars(sourceName, JNI_FALSE);
-    ALOGD("openDexFileNative: %s", sourceNameC);
-    if (strstr(sourceNameC, "/blackbox/") != nullptr) {
-        DexFileHook::setFileReadonly(sourceNameC);
+    if (!sourceName) {
+        return orig_openDexFileNative(env, obj, sourceName, outputName, flags, loader, elements);
     }
-    jobject orig = orig_openDexFileNative(env, obj, sourceName, outputName, flags, loader, elements);
-    env->ReleaseStringUTFChars(sourceName, sourceNameC);
-    return orig;
+    ScopedUtfChars sourceNameC(env, sourceName);
+    ALOGD("openDexFileNative: %s", sourceNameC.c_str());
+    if (strstr(sourceNameC.c_str(), "/blackbox/") != nullptr) {
+        DexFileHook::setFileReadonly(sourceNameC.c_str());
+    }
+    return orig_openDexFileNative(env, obj, sourceName, outputName, flags, loader, elements);
 }
 
 void DexFileHook::init(JNIEnv *env) {

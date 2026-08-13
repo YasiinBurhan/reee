@@ -11,9 +11,14 @@ HOOK_JNI(jstring, canonicalize0, JNIEnv *env, jobject obj, jstring path) {
     return orig_canonicalize0(env, obj, redirect);
 }
 
-HOOK_JNI(jint, getBooleanAttributes0, JNIEnv *env, jobject obj, jstring abspath) {
-    jstring redirect = IO::redirectPath(env, abspath);
+HOOK_JNI(jint, getBooleanAttributes0, JNIEnv *env, jobject obj, jobject file) {
+    jobject redirect = IO::redirectPath(env, file);
     return orig_getBooleanAttributes0(env, obj, redirect);
+}
+
+HOOK_JNI(jint, getBooleanAttributes0String, JNIEnv *env, jobject obj, jstring abspath) {
+    jstring redirect = IO::redirectPath(env, abspath);
+    return orig_getBooleanAttributes0String(env, obj, redirect);
 }
 
 HOOK_JNI(jlong, getLastModifiedTime0, JNIEnv *env, jobject obj, jobject path) {
@@ -65,6 +70,20 @@ void UnixFileSystemHook::init(JNIEnv *env) {
                             (void *) new_canonicalize0, (void **) (&orig_canonicalize0), false);
     } catch (...) {
         ALOGD("UnixFileSystemHook: Failed to hook canonicalize0, continuing without it");
+    }
+
+    try {
+        JniHook::HookJniFun(env, className, "getBooleanAttributes0", "(Ljava/io/File;)I",
+                            (void *) new_getBooleanAttributes0, (void **) (&orig_getBooleanAttributes0), false);
+    } catch (...) {
+        ALOGD("UnixFileSystemHook: Failed to hook getBooleanAttributes0 with File signature, trying String signature");
+    }
+
+    try {
+        JniHook::HookJniFun(env, className, "getBooleanAttributes0", "(Ljava/lang/String;)I",
+                            (void *) new_getBooleanAttributes0String, (void **) (&orig_getBooleanAttributes0String), false);
+    } catch (...) {
+        ALOGD("UnixFileSystemHook: Failed to hook getBooleanAttributes0 with String signature");
     }
     
     try {
