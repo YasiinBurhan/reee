@@ -299,9 +299,9 @@ void JniHook::InitJniHook(JNIEnv *env, int api_level) {
     }
     char *fieldStart = reinterpret_cast<char *>(nativeOffsetField);
     for (i = 1; i < HookEnv.art_field_size; ++i) {
-        auto value = *(int32_t *) (fieldStart + i * sizeof(int32_t));
+        auto value = *(uint32_t *) (fieldStart + i * sizeof(uint32_t));
         if (value == flags) {
-            HookEnv.art_field_flags_offset = i * sizeof(int32_t);
+            HookEnv.art_field_flags_offset = i * sizeof(uint32_t);
             break;
         }
     }
