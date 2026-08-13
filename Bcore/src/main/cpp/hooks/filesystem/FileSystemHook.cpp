@@ -1,10 +1,12 @@
 #include "hooks/filesystem/FileSystemHook.h"
 #include "utils/Log.h"
 #include "shadowhook.h"
+#include "io/IO.h"
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <cstdarg>
 #include <cstring>
+#include <cstdlib>
 #include <cerrno>
 
 #ifndef O_TMPFILE
@@ -29,15 +31,24 @@ static int new_open(const char *pathname, int flags, ...) {
         }
     }
     
+    const char *redirected = pathname ? IO::redirectPath(pathname) : nullptr;
+    const char *target = redirected ? redirected : pathname;
+
+    int res = -1;
     if ((flags & O_CREAT) || (flags & O_TMPFILE)) {
         va_list args;
         va_start(args, flags);
         mode_t mode = va_arg(args, mode_t);
         va_end(args);
-        return orig_open(pathname, flags, mode);
+        res = orig_open(target, flags, mode);
     } else {
-        return orig_open(pathname, flags);
+        res = orig_open(target, flags);
     }
+
+    if (redirected && redirected != pathname) {
+        free((void*)redirected);
+    }
+    return res;
 }
 
 static int new_open64(const char *pathname, int flags, ...) {
@@ -53,15 +64,24 @@ static int new_open64(const char *pathname, int flags, ...) {
         }
     }
     
+    const char *redirected = pathname ? IO::redirectPath(pathname) : nullptr;
+    const char *target = redirected ? redirected : pathname;
+
+    int res = -1;
     if ((flags & O_CREAT) || (flags & O_TMPFILE)) {
         va_list args;
         va_start(args, flags);
         mode_t mode = va_arg(args, mode_t);
         va_end(args);
-        return orig_open64(pathname, flags, mode);
+        res = orig_open64(target, flags, mode);
     } else {
-        return orig_open64(pathname, flags);
+        res = orig_open64(target, flags);
     }
+
+    if (redirected && redirected != pathname) {
+        free((void*)redirected);
+    }
+    return res;
 }
 
 void FileSystemHook::init() {

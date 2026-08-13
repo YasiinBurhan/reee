@@ -4,10 +4,12 @@
 #include <fcntl.h>
 #include <cstdio>
 #include <cstring>
+#include <cstdlib>
 #include <cerrno>
 #include <dirent.h>
 #include "shadowhook.h"
 #include "security/AntiDetection.h"
+#include "io/IO.h"
 
 #define LOG_TAG "AntiDetection"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
@@ -113,7 +115,13 @@ static const char* blocked_packages[] = {
 static bool is_blocked_file(const char* path) {
     if (!path) return false;
     for (int i = 0; blocked_files[i]; ++i) {
-        if (strstr(path, blocked_files[i])) {
+        const char* bf = blocked_files[i];
+        if (strcmp(bf, "/virtual") == 0 || strcmp(bf, "/blackbox") == 0) {
+            if (strcmp(path, "/virtual") == 0 || strcmp(path, "/virtual/") == 0 ||
+                strcmp(path, "/blackbox") == 0 || strcmp(path, "/blackbox/") == 0) {
+                return true;
+            }
+        } else if (strstr(path, bf)) {
             return true;
         }
     }
@@ -140,8 +148,12 @@ static DIR* (*orig_opendir)(const char *name) = nullptr;
 
 static bool is_safe_path(const char* path) {
     if (!path) return false;
-    if (strstr(path, "/proc/net/")) return true;
+    if (strstr(path, "/proc/")) return true;
     if (strstr(path, "/dev/socket/")) return true;
+    if (strstr(path, "com.equinox.virtual")) return true;
+    if (strstr(path, "top.niunaijun.blackbox")) return true;
+    if (strstr(path, "/blackbox/")) return true;
+    if (strstr(path, "/virtual/")) return true;
     return false;
 }
 
@@ -150,7 +162,13 @@ static int my_access(const char *pathname, int mode) {
         errno = ENOENT;
         return -1;
     }
-    return orig_access ? orig_access(pathname, mode) : -1;
+    const char *redirected = pathname ? IO::redirectPath(pathname) : nullptr;
+    const char *target = redirected ? redirected : pathname;
+    int res = orig_access ? orig_access(target, mode) : -1;
+    if (redirected && redirected != pathname) {
+        free((void*)redirected);
+    }
+    return res;
 }
 
 static int my_stat(const char *pathname, struct stat *buf) {
@@ -158,7 +176,13 @@ static int my_stat(const char *pathname, struct stat *buf) {
         errno = ENOENT;
         return -1;
     }
-    return orig_stat ? orig_stat(pathname, buf) : -1;
+    const char *redirected = pathname ? IO::redirectPath(pathname) : nullptr;
+    const char *target = redirected ? redirected : pathname;
+    int res = orig_stat ? orig_stat(target, buf) : -1;
+    if (redirected && redirected != pathname) {
+        free((void*)redirected);
+    }
+    return res;
 }
 
 static int my_lstat(const char *pathname, struct stat *buf) {
@@ -166,7 +190,13 @@ static int my_lstat(const char *pathname, struct stat *buf) {
         errno = ENOENT;
         return -1;
     }
-    return orig_lstat ? orig_lstat(pathname, buf) : -1;
+    const char *redirected = pathname ? IO::redirectPath(pathname) : nullptr;
+    const char *target = redirected ? redirected : pathname;
+    int res = orig_lstat ? orig_lstat(target, buf) : -1;
+    if (redirected && redirected != pathname) {
+        free((void*)redirected);
+    }
+    return res;
 }
 
 static FILE* my_fopen(const char *pathname, const char *mode) {
@@ -174,7 +204,13 @@ static FILE* my_fopen(const char *pathname, const char *mode) {
         errno = ENOENT;
         return nullptr;
     }
-    return orig_fopen ? orig_fopen(pathname, mode) : nullptr;
+    const char *redirected = pathname ? IO::redirectPath(pathname) : nullptr;
+    const char *target = redirected ? redirected : pathname;
+    FILE* res = orig_fopen ? orig_fopen(target, mode) : nullptr;
+    if (redirected && redirected != pathname) {
+        free((void*)redirected);
+    }
+    return res;
 }
 
 static int my_open(const char *pathname, int flags, ...) {
@@ -182,18 +218,24 @@ static int my_open(const char *pathname, int flags, ...) {
         errno = ENOENT;
         return -1;
     }
+    const char *redirected = pathname ? IO::redirectPath(pathname) : nullptr;
+    const char *target = redirected ? redirected : pathname;
+    int res = -1;
     if (orig_open) {
         if (flags & O_CREAT) {
             va_list args;
             va_start(args, flags);
             mode_t mode = va_arg(args, mode_t);
             va_end(args);
-            return orig_open(pathname, flags, mode);
+            res = orig_open(target, flags, mode);
         } else {
-            return orig_open(pathname, flags);
+            res = orig_open(target, flags);
         }
     }
-    return -1;
+    if (redirected && redirected != pathname) {
+        free((void*)redirected);
+    }
+    return res;
 }
 
 static ssize_t my_readlink(const char *pathname, char *buf, size_t bufsiz) {
@@ -201,7 +243,13 @@ static ssize_t my_readlink(const char *pathname, char *buf, size_t bufsiz) {
         errno = ENOENT;
         return -1;
     }
-    return orig_readlink ? orig_readlink(pathname, buf, bufsiz) : -1;
+    const char *redirected = pathname ? IO::redirectPath(pathname) : nullptr;
+    const char *target = redirected ? redirected : pathname;
+    ssize_t res = orig_readlink ? orig_readlink(target, buf, bufsiz) : -1;
+    if (redirected && redirected != pathname) {
+        free((void*)redirected);
+    }
+    return res;
 }
 
 static DIR* my_opendir(const char *name) {
@@ -209,7 +257,13 @@ static DIR* my_opendir(const char *name) {
         errno = ENOENT;
         return nullptr;
     }
-    return orig_opendir ? orig_opendir(name) : nullptr;
+    const char *redirected = name ? IO::redirectPath(name) : nullptr;
+    const char *target = redirected ? redirected : name;
+    DIR* res = orig_opendir ? orig_opendir(target) : nullptr;
+    if (redirected && redirected != name) {
+        free((void*)redirected);
+    }
+    return res;
 }
 
 static void install_file_hooks() {
