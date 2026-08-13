@@ -35,8 +35,13 @@ import androidx.compose.material.icons.filled.CleanHands
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeveloperMode
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.TextButton
+import com.equinox.virtual.manager.VirtualSpaceManager
+import android.app.Application
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -95,6 +100,21 @@ fun VirtualSpaceTabScreen(
         LockedVirtualSpaceView(expiryTime = expiryTime)
     } else {
         Column(modifier = Modifier.fillMaxSize()) {
+            val context = LocalContext.current
+            val virtualSpaceManager = remember { VirtualSpaceManager(context.applicationContext as Application) }
+            var showPermissionWarning by remember { mutableStateOf(!virtualSpaceManager.hasAllFilesAccess()) }
+
+            if (showPermissionWarning) {
+                PermissionWarningCard(
+                    onGrant = {
+                        virtualSpaceManager.requestAllFilesAccess()
+                    },
+                    onRefresh = {
+                        showPermissionWarning = !virtualSpaceManager.hasAllFilesAccess()
+                    }
+                )
+            }
+
             // iOS style Segmented Control
             Surface(
                 modifier = Modifier
@@ -159,6 +179,73 @@ fun VirtualSpaceTabScreen(
     }
 }
 
+@Composable
+fun PermissionWarningCard(
+    onGrant: () -> Unit,
+    onRefresh: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.7f)
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(24.dp)
+                )
+                Text(
+                    text = "Akses File Diperlukan",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Text(
+                text = "EQuinox memerlukan izin 'Akses Semua File' untuk menyinkronkan data game (OBB) ke ruang virtual. Tanpa izin ini, game besar mungkin gagal dijalankan.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+                textAlign = TextAlign.Center
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = onGrant,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Berikan Izin")
+                }
+                
+                TextButton(onClick = onRefresh) {
+                    Text("Sudah Diberikan", color = MaterialTheme.colorScheme.error)
+                }
+            }
+        }
+    }
+}
 @Composable
 fun LockedVirtualSpaceView(
     expiryTime: Long? = null

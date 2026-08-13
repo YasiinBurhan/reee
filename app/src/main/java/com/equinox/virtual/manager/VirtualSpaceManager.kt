@@ -11,6 +11,9 @@ import com.equinox.virtual.model.VirtualAppInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import android.content.Intent
+import android.os.Build
+import android.os.Environment
 import top.niunaijun.blackbox.BlackBoxCore
 import java.io.File
 import java.net.HttpURLConnection
@@ -178,7 +181,33 @@ class VirtualSpaceManager(private val application: Application) {
     }
 
     fun installPackageAsUser(packageName: String, userId: Int): top.niunaijun.blackbox.entity.pm.InstallResult {
-        return BlackBoxCore.get().installPackageAsUser(packageName, userId)
+        val result = BlackBoxCore.get().installPackageAsUser(packageName, userId)
+        if (result.success) {
+            copyObbFromHost(packageName, userId)
+        }
+        return result
+    }
+
+    private fun copyObbFromHost(packageName: String, userId: Int) {
+        try {
+            val hostObbDir = File(android.os.Environment.getExternalStorageDirectory(), "Android/obb/$packageName")
+            if (hostObbDir.exists() && hostObbDir.isDirectory) {
+                val virtualObbDir = top.niunaijun.blackbox.core.env.BEnvironment.getExternalObbDir(packageName, userId)
+                virtualObbDir.mkdirs()
+                
+                hostObbDir.listFiles()?.forEach { file ->
+                    if (file.isFile && file.name.endsWith(".obb")) {
+                        val destFile = File(virtualObbDir, file.name)
+                        if (!destFile.exists() || destFile.length() != file.length()) {
+                            Log.d("VirtualSpaceManager", "Copying OBB: ${file.name} to ${destFile.absolutePath}")
+                            top.niunaijun.blackbox.utils.FileUtils.copyFile(file, destFile)
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("VirtualSpaceManager", "Error copying OBB from host for $packageName: ${e.message}")
+        }
     }
 
     fun uninstallPackageAsUser(packageName: String, userId: Int) {
@@ -265,6 +294,9 @@ class VirtualSpaceManager(private val application: Application) {
 
                 val packageName = result.packageName ?: ""
                 if (packageName.isNotEmpty()) {
+                    // Extract OBB if exists in ZIP
+                    extractObbFromZip(file, packageName, userId)
+                    
                     // Extract native libs from ALL APKs
                     val libDir = top.niunaijun.blackbox.core.env.BEnvironment.getAppLibDir(packageName)
                     libDir.mkdirs()
@@ -303,23 +335,25 @@ class VirtualSpaceManager(private val application: Application) {
                             try {
                                 synchronized(apk.absolutePath.intern()) {
                                     java.util.zip.ZipFile(apk).use { zip ->
-                                    val entries = zip.entries()
-                                    while (entries.hasMoreElements()) {
-                                        val entry = entries.nextElement()
-                                        val prefix = "lib/$bestAbi/"
-                                        if (entry.name.startsWith(prefix) && entry.name.endsWith(".so")) {
-                                            val fileName = entry.name.substring(prefix.length)
-                                            val destFile = File(libDir, fileName)
-                                            Log.d("VirtualSpaceManager", "XAPK: Extracting ${entry.name} to ${destFile.absolutePath}")
-                                            zip.getInputStream(entry).use { zipInput ->
-                                                destFile.outputStream().use { output ->
-                                                    zipInput.copyTo(output)
+                                        val entries = zip.entries()
+                                        while (entries.hasMoreElements()) {
+                                            val entry = entries.nextElement()
+                                            val prefix = "lib/$bestAbi/"
+                                            if (entry.name.startsWith(prefix) && entry.name.endsWith(".so")) {
+                                                val fileName = entry.name.substring(prefix.length)
+                                                val destFile = File(libDir, fileName)
+                                                Log.d("VirtualSpaceManager", "XAPK: Extracting ${entry.name} to ${destFile.absolutePath}")
+                                                zip.getInputStream(entry).use { zipInput ->
+                                                    destFile.outputStream().use { output ->
+                                                        zipInput.copyTo(output)
+                                                    }
                                                 }
+                                                // CRITICAL: Set as read-only to satisfy Android 15+ security
+                                                destFile.setWritable(false)
+                                                Log.d("VirtualSpaceManager", "XAPK: Successfully extracted and secured ${entry.name}")
                                             }
-                                            Log.d("VirtualSpaceManager", "XAPK: Successfully extracted ${entry.name}")
                                         }
                                     }
-                                }
                                 }
                             } catch (e: Exception) {
                                 Log.e("VirtualSpaceManager", "Failed to extract native libraries from ${apk.name}", e)
@@ -338,10 +372,69 @@ class VirtualSpaceManager(private val application: Application) {
         } else {
             // Handle standard APK installation
             val result = BlackBoxCore.get().installPackageAsUser(file, userId)
+            if (result.success && result.packageName != null) {
+                copyObbFromHost(result.packageName, userId)
+            }
             return Pair(result.success, result.msg ?: "")
         }
     }
 
+    private fun extractObbFromZip(zipFile: File, packageName: String, userId: Int) {
+        try {
+            java.util.zip.ZipFile(zipFile).use { zip ->
+                val entries = zip.entries()
+                val virtualObbDir = top.niunaijun.blackbox.core.env.BEnvironment.getExternalObbDir(packageName, userId)
+                virtualObbDir.mkdirs()
+
+                while (entries.hasMoreElements()) {
+                    val entry = entries.nextElement()
+                    val entryNameLower = entry.name.lowercase()
+                    // Support various XAPK/ZIP OBB layouts:
+                    // 1. Android/obb/com.pkg/main.obb
+                    // 2. obb/com.pkg/main.obb
+                    // 3. com.pkg/main.obb
+                    if (entryNameLower.endsWith(".obb") && 
+                        (entryNameLower.contains("obb/") || entryNameLower.contains(packageName.lowercase()))) {
+                        
+                        val fileName = entry.name.substringAfterLast("/")
+                        val destFile = File(virtualObbDir, fileName)
+                        Log.d("VirtualSpaceManager", "XAPK: Extracting OBB ${entry.name} to ${destFile.absolutePath}")
+                        zip.getInputStream(entry).use { input ->
+                            destFile.outputStream().use { output ->
+                                input.copyTo(output)
+                            }
+                        }
+                        Log.d("VirtualSpaceManager", "XAPK: Successfully extracted OBB: $fileName")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("VirtualSpaceManager", "Error extracting OBB from ZIP: ${e.message}")
+        }
+    }
+
+    fun hasAllFilesAccess(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Environment.isExternalStorageManager()
+        } else {
+            true
+        }
+    }
+
+    fun requestAllFilesAccess() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                val intent = Intent(android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+                intent.data = Uri.parse("package:${context.packageName}")
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(intent)
+            } catch (e: Exception) {
+                val intent = Intent(android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(intent)
+            }
+        }
+    }
     fun installFromUri(uri: Uri, userId: Int): Pair<Boolean, String> {
         val tempFile = File(context.cacheDir, "install_temp_${System.currentTimeMillis()}.apk")
         try {
