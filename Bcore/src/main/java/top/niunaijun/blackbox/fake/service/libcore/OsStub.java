@@ -95,4 +95,29 @@ public class OsStub extends ClassInvocationStub {
             return BlackBoxCore.getHostUid();
         }
     }
+
+    @ProxyMethod("chown")
+    public static class Chown extends MethodHook {
+        @Override
+        protected Object hook(Object who, Method method, Object[] args) throws Throwable {
+            try {
+                return method.invoke(who, args);
+            } catch (Throwable t) {
+                // Ignore EPERM when app attempts chown on its sandbox/code_cache dirs
+                return null;
+            }
+        }
+    }
+
+    @ProxyMethod("fchown")
+    public static class Fchown extends MethodHook {
+        @Override
+        protected Object hook(Object who, Method method, Object[] args) throws Throwable {
+            try {
+                return method.invoke(who, args);
+            } catch (Throwable t) {
+                return null;
+            }
+        }
+    }
 }

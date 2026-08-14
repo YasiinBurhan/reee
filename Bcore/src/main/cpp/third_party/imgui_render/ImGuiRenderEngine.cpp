@@ -403,7 +403,8 @@ static void library_monitor_thread_func() {
         "libflutter.so",
         "libmonosgen-2.0.so",
         "libGLESv2.so",
-        "libGLESv3.so"
+        "libGLESv3.so",
+        "libvulkan.so"
     };
 
     while (true) {
@@ -491,6 +492,7 @@ void ImGuiRenderEngine::init(const char* packageName) {
             "libEGL.so",
             "libGLESv2.so",
             "libGLESv3.so",
+            "libvulkan.so",
             "libunity.so",
             "libcocos2dcpp.so",
             "libUE4.so",

@@ -491,6 +491,10 @@ static DIR* my_opendir(const char *name) {
 static int my_system_property_get(const char *name, char *value) {
     if (!name || !value) return 0;
 
+    if (strcmp(name, "vzw.os.rooted") == 0) {
+        strcpy(value, "0");
+        return strlen(value);
+    }
     if (strcmp(name, "ro.build.tags") == 0) {
         strcpy(value, "release-keys");
         return strlen(value);
@@ -504,6 +508,14 @@ static int my_system_property_get(const char *name, char *value) {
         return strlen(value);
     }
     if (strcmp(name, "ro.debuggable") == 0) {
+        strcpy(value, "0");
+        return strlen(value);
+    }
+    if (strcmp(name, "ro.build.selinux") == 0) {
+        strcpy(value, "1");
+        return strlen(value);
+    }
+    if (strcmp(name, "sys.oem_unlock_allowed") == 0) {
         strcpy(value, "0");
         return strlen(value);
     }
