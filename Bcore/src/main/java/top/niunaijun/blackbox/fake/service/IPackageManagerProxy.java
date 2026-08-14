@@ -134,8 +134,8 @@ public class IPackageManagerProxy extends BinderInvocationStub {
             int flags = MethodParameterUtils.toInt(args[1]);
             
             
-            if ("com.android.vending".equals(packageName)) {
-                return createFakeGooglePlayServicesPackageInfo();
+            if ("com.google.android.gms".equals(packageName) || "com.android.vending".equals(packageName)) {
+                return createFakeGmsOrStorePackageInfo(packageName);
             }
             
             PackageInfo packageInfo = BlackBoxCore.getBPackageManager().getPackageInfo(packageName, flags, BlackBoxCore.getUserId());
@@ -160,20 +160,20 @@ public class IPackageManagerProxy extends BinderInvocationStub {
             return null;
         }
         
-        private PackageInfo createFakeGooglePlayServicesPackageInfo() {
+        private PackageInfo createFakeGmsOrStorePackageInfo(String packageName) {
             PackageInfo packageInfo = new PackageInfo();
-            packageInfo.packageName = "com.android.vending";
-            packageInfo.versionName = "33.8.16-21";
-            packageInfo.versionCode = 83381621;
+            packageInfo.packageName = packageName;
+            packageInfo.versionName = "23.40.14";
+            packageInfo.versionCode = 234014000;
             
             ApplicationInfo appInfo = new ApplicationInfo();
-            appInfo.packageName = "com.android.vending";
-            appInfo.name = "Google Play Store";
-            appInfo.flags = ApplicationInfo.FLAG_SYSTEM;
+            appInfo.packageName = packageName;
+            appInfo.name = "com.google.android.gms".equals(packageName) ? "Google Play services" : "Google Play Store";
+            appInfo.flags = ApplicationInfo.FLAG_SYSTEM | ApplicationInfo.FLAG_HAS_CODE;
             appInfo.uid = 10001; 
             packageInfo.applicationInfo = appInfo;
             
-            Slog.d(TAG, "GetPackageInfo: Providing fake Google Play Services info");
+            Slog.d(TAG, "GetPackageInfo: Providing fake info for " + packageName);
             return packageInfo;
         }
     }
@@ -279,10 +279,16 @@ public class IPackageManagerProxy extends BinderInvocationStub {
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
             String packageName = (String) args[0];
-
             int flags = MethodParameterUtils.toInt(args[1]);
 
-
+            if ("com.google.android.gms".equals(packageName) || "com.android.vending".equals(packageName)) {
+                ApplicationInfo appInfo = new ApplicationInfo();
+                appInfo.packageName = packageName;
+                appInfo.name = "com.google.android.gms".equals(packageName) ? "Google Play services" : "Google Play Store";
+                appInfo.flags = ApplicationInfo.FLAG_SYSTEM | ApplicationInfo.FLAG_HAS_CODE;
+                appInfo.uid = 10001;
+                return appInfo;
+            }
 
             ApplicationInfo applicationInfo = BlackBoxCore.getBPackageManager().getApplicationInfo(packageName, flags, BlackBoxCore.getUserId());
             if (applicationInfo != null) {
