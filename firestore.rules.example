@@ -1,0 +1,82 @@
+// ==============================================================================
+// EXAMPLE — MUST BE REVIEWED AGAINST LIVE FIRESTORE SCHEMA BEFORE DEPLOYMENT
+// This is a reference security rule template derived from the Equinox Virtual client
+// collections ('users' and 'allowed_packages').
+// ==============================================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        (request.auth.token.role == 'admin') ||
+        (getUserData().role == 'admin')
+      );
+    }
+
+    function isReseller() {
+      return isAuthenticated() && (
+        (request.auth.token.role == 'reseller') ||
+        (getUserData().role == 'reseller')
+      );
+    }
+
+    // Default deny all unmatched collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --------------------------------------------------------------------------
+    // Collection: users
+    // Document ID: HWID or UID
+    // --------------------------------------------------------------------------
+    match /users/{userId} {
+      // Allow reading user doc: owner can read their own, Admin & Reseller can list users
+      allow read: if isOwner(userId) || isAdmin() || isReseller();
+
+      // Creation (Trial registration):
+      // Only the authenticated device owner can create their own doc with fixed member role
+      allow create: if isOwner(userId)
+                    && request.resource.data.role == 'member'
+                    && request.resource.data.balance == 0
+                    && request.resource.data.status == 'active';
+
+      // Updates:
+      // 1. Admin can update everything (role, balance, status, expiry)
+      // 2. Reseller can update user's expiredAt (validated via backend/transaction)
+      // 3. Member cannot self-promote role, change balance, or extend expiry
+      allow update: if isAdmin()
+                    || (isReseller() && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'balance']))
+                    || (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'balance', 'expiredAt', 'status']));
+
+      // Deletion: Admin only
+      allow delete: if isAdmin();
+    }
+
+    // --------------------------------------------------------------------------
+    // Collection: allowed_packages
+    // Document ID: Package Name (e.g., com.example.game)
+    // --------------------------------------------------------------------------
+    match /allowed_packages/{pkgName} {
+      // All authenticated members can read the list of clonable APKs
+      allow read: if isAuthenticated();
+
+      // Only Admin or Reseller can add/delete allowed packages
+      allow create, update, delete: if isAdmin() || isReseller();
+    }
+  }
+}

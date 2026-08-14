@@ -42,7 +42,7 @@
 
         <activity
             android:name=".DiagnosticsActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="Bcore Diagnostics"
             android:theme="@style/Theme.MyApplication">
         </activity>
