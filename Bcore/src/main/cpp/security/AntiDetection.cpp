@@ -491,9 +491,10 @@ static DIR* my_opendir(const char *name) {
 static int my_system_property_get(const char *name, char *value) {
     if (!name || !value) return 0;
 
+    // Explicitly force-return "0" for "vzw.os.rooted" to prevent root detection
     if (strcmp(name, "vzw.os.rooted") == 0) {
         strcpy(value, "0");
-        return strlen(value);
+        return 1;
     }
     if (strcmp(name, "ro.build.tags") == 0) {
         strcpy(value, "release-keys");
