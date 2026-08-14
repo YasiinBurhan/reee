@@ -488,6 +488,22 @@ static DIR* my_opendir(const char *name) {
     return res;
 }
 
+typedef const void* prop_info_ptr;
+
+static prop_info_ptr (*orig_system_property_find)(const char *name) = nullptr;
+static int (*orig_system_property_get)(const char *name, char *value) = nullptr;
+
+static prop_info_ptr my_system_property_find(const char *name) {
+    if (name) {
+        if (strcmp(name, "vzw.os.rooted") == 0 ||
+            strcmp(name, "sys.oem_unlock_allowed") == 0 ||
+            strcmp(name, "service.adb.root") == 0) {
+            return nullptr;
+        }
+    }
+    return orig_system_property_find ? orig_system_property_find(name) : nullptr;
+}
+
 static int my_system_property_get(const char *name, char *value) {
     if (!name || !value) return 0;
 
@@ -543,6 +559,7 @@ static void install_file_hooks() {
     shadowhook_hook_sym_name("libc.so", "open64", (void*)my_open64, (void**)&orig_open64);
     shadowhook_hook_sym_name("libc.so", "readlink", (void*)my_readlink, (void**)&orig_readlink);
     shadowhook_hook_sym_name("libc.so", "opendir", (void*)my_opendir, (void**)&orig_opendir);
+    shadowhook_hook_sym_name("libc.so", "__system_property_find", (void*)my_system_property_find, (void**)&orig_system_property_find);
     shadowhook_hook_sym_name("libc.so", "__system_property_get", (void*)my_system_property_get, (void**)&orig_system_property_get);
 
     LOGD("Procfs & file security hooks installed via shadowhook");
