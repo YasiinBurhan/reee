@@ -158,6 +158,8 @@ static int (*orig_open64)(const char *pathname, int flags, ...) = nullptr;
 static ssize_t (*orig_readlink)(const char *pathname, char *buf, size_t bufsiz) = nullptr;
 static DIR* (*orig_opendir)(const char *name) = nullptr;
 static int (*orig_system_property_get)(const char *name, char *value) = nullptr;
+typedef const void* prop_info_ptr;
+static prop_info_ptr (*orig_system_property_find)(const char *name) = nullptr;
 
 static bool is_problematic_resource_path(const char* pathname) {
     if (!pathname) return false;
@@ -487,11 +489,6 @@ static DIR* my_opendir(const char *name) {
     }
     return res;
 }
-
-typedef const void* prop_info_ptr;
-
-static prop_info_ptr (*orig_system_property_find)(const char *name) = nullptr;
-static int (*orig_system_property_get)(const char *name, char *value) = nullptr;
 
 static prop_info_ptr my_system_property_find(const char *name) {
     if (name) {
