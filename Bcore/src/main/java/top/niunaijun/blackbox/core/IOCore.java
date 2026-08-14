@@ -120,6 +120,18 @@ public class IOCore {
             rule.put(String.format("/data/user/%d/%s", systemUserId, packageName), packageInfo.dataDir);
 
             
+            // Fix Unity / Free Fire / Game OBB & Data access
+            // Games looking for /storage/emulated/0/Android/obb/<package> or /sdcard/Android/obb/<package>
+            // must fall back to the host system OBB if virtual obb does not contain it.
+            File hostObbDir = new File(Environment.getExternalStorageDirectory(), "Android/obb/" + packageName);
+            File virtualObbDir = BEnvironment.getExternalObbDir(packageName, BlackBoxCore.getUserId());
+            if (hostObbDir.exists() && (!virtualObbDir.exists() || virtualObbDir.list() == null || virtualObbDir.list().length == 0)) {
+                // If virtual obb is empty but host has it, redirect directly to host obb!
+                rule.put(String.format("/sdcard/Android/obb/%s", packageName), hostObbDir.getAbsolutePath());
+                rule.put(String.format("/storage/emulated/%d/Android/obb/%s", systemUserId, packageName), hostObbDir.getAbsolutePath());
+                top.niunaijun.blackbox.utils.Slog.d(TAG, "Redirecting OBB to Host Storage for: " + packageName + " -> " + hostObbDir.getAbsolutePath());
+            }
+
             android.content.SharedPreferences sp = BlackBoxCore.getContext().getSharedPreferences("equinox_settings", Context.MODE_PRIVATE);
             boolean directStorage = sp.getBoolean("direct_storage_" + packageName, false);
             if (directStorage) {
