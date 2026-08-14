@@ -201,6 +201,7 @@ class VirtualSpaceManager(private val application: Application) {
                         if (!destFile.exists() || destFile.length() != file.length()) {
                             Log.d("VirtualSpaceManager", "Copying OBB: ${file.name} to ${destFile.absolutePath}")
                             top.niunaijun.blackbox.utils.FileUtils.copyFile(file, destFile)
+                            destFile.setReadOnly()
                         }
                     }
                 }
@@ -268,13 +269,25 @@ class VirtualSpaceManager(private val application: Application) {
                     return Pair(false, "Tidak ditemukan file APK di dalam paket XAPK.")
                 }
 
-                // Identify base APK
-                var baseApkFile: File? = null
-                for (apk in apkFiles) {
-                    val packageInfo = packageManager.getPackageArchiveInfo(apk.absolutePath, 0)
-                    if (packageInfo != null) {
-                        baseApkFile = apk
-                        break
+                // Identify base APK: Look for base.apk or the one containing package archive info with launchable components
+                var baseApkFile: File? = apkFiles.find { it.name.equals("base.apk", ignoreCase = true) }
+                if (baseApkFile == null) {
+                    for (apk in apkFiles) {
+                        try {
+                            val packageInfo = packageManager.getPackageArchiveInfo(apk.absolutePath, PackageManager.GET_ACTIVITIES)
+                            if (packageInfo != null && packageInfo.packageName != null) {
+                                val acts = packageInfo.activities
+                                if (acts != null && acts.isNotEmpty()) {
+                                    baseApkFile = apk
+                                    break
+                                }
+                                if (baseApkFile == null) {
+                                    baseApkFile = apk
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Log.w("VirtualSpaceManager", "Failed to parse ${apk.name}: ${e.message}")
+                        }
                     }
                 }
 
@@ -360,6 +373,21 @@ class VirtualSpaceManager(private val application: Application) {
                             }
                         }
                     }
+
+                    // Copy split APKs (config.*.apk) into the app directory
+                    val appDir = top.niunaijun.blackbox.core.env.BEnvironment.getAppDir(packageName)
+                    for (apk in apkFiles) {
+                        if (apk != baseApkFile) {
+                            try {
+                                val splitDest = File(appDir, apk.name)
+                                top.niunaijun.blackbox.utils.FileUtils.copyFile(apk, splitDest)
+                                splitDest.setReadOnly()
+                                Log.d("VirtualSpaceManager", "XAPK: Copied split apk: ${apk.name}")
+                            } catch (e: Exception) {
+                                Log.w("VirtualSpaceManager", "XAPK: Failed to copy split apk ${apk.name}: ${e.message}")
+                            }
+                        }
+                    }
                 }
 
                 return Pair(true, "Kloning XAPK berhasil.")
@@ -388,14 +416,14 @@ class VirtualSpaceManager(private val application: Application) {
 
                 while (entries.hasMoreElements()) {
                     val entry = entries.nextElement()
+                    if (entry.isDirectory) continue
                     val entryNameLower = entry.name.lowercase()
                     // Support various XAPK/ZIP OBB layouts:
-                    // 1. Android/obb/com.pkg/main.obb
-                    // 2. obb/com.pkg/main.obb
-                    // 3. com.pkg/main.obb
-                    if (entryNameLower.endsWith(".obb") && 
-                        (entryNameLower.contains("obb/") || entryNameLower.contains(packageName.lowercase()))) {
-                        
+                    // 1. Android/obb/com.pkg/main.xxx.com.pkg.obb
+                    // 2. obb/com.pkg/main.xxx.com.pkg.obb
+                    // 3. com.pkg/main.xxx.com.pkg.obb
+                    // 4. Any file ending with .obb
+                    if (entryNameLower.endsWith(".obb")) {
                         val fileName = entry.name.substringAfterLast("/")
                         val destFile = File(virtualObbDir, fileName)
                         Log.d("VirtualSpaceManager", "XAPK: Extracting OBB ${entry.name} to ${destFile.absolutePath}")
@@ -404,6 +432,7 @@ class VirtualSpaceManager(private val application: Application) {
                                 input.copyTo(output)
                             }
                         }
+                        destFile.setReadOnly()
                         Log.d("VirtualSpaceManager", "XAPK: Successfully extracted OBB: $fileName")
                     }
                 }

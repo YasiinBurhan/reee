@@ -111,6 +111,10 @@ public class IOCore {
         String packageName = context.getPackageName();
 
         try {
+            setTargetPackageNative(packageName);
+        } catch (Throwable ignored) {}
+
+        try {
             ApplicationInfo packageInfo = BlackBoxCore.getBPackageManager().getApplicationInfo(packageName, PackageManager.GET_META_DATA, BlackBoxCore.getUserId());
             int systemUserId = BlackBoxCore.getHostUserId();
             rule.put(String.format("/data/data/%s/lib", packageName), packageInfo.nativeLibraryDir);
@@ -204,4 +208,6 @@ public class IOCore {
         rule.put(proc + "cmdline", cmdline);
         rule.put(selfProc + "cmdline", cmdline);
     }
+
+    public static native void setTargetPackageNative(String packageName);
 }

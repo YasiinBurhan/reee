@@ -17,6 +17,7 @@ import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.os.Build;
 
+import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -306,6 +307,25 @@ public class PackageManagerCompat {
         ai.sourceDir = sourceDir;
         ai.uid = p.mExtras.appId;
 
+        // Auto-discover split APKs in the app directory
+        File appDir = BEnvironment.getAppDir(p.packageName);
+        if (appDir.exists() && appDir.isDirectory()) {
+            File[] splits = appDir.listFiles(new java.io.FilenameFilter() {
+                @Override
+                public boolean accept(File dir, String name) {
+                    return name.endsWith(".apk") && !name.equals("base.apk");
+                }
+            });
+            if (splits != null && splits.length > 0) {
+                String[] splitPaths = new String[splits.length];
+                for (int i = 0; i < splits.length; i++) {
+                    splitPaths[i] = splits[i].getAbsolutePath();
+                }
+                ai.splitSourceDirs = splitPaths;
+                ai.splitPublicSourceDirs = splitPaths;
+            }
+        }
+
 
         if (BuildCompat.isL()) {
             BRApplicationInfoL.get(ai)._set_primaryCpuAbi(Build.CPU_ABI);
@@ -369,6 +389,22 @@ public class PackageManagerCompat {
         if (ps != null) {
             AssetManager assets = BRAssetManager.get()._new();
             BRAssetManager.get(assets).addAssetPath(ps.pkg.baseCodePath);
+
+            File appDir = BEnvironment.getAppDir(ps.pkg.packageName);
+            if (appDir.exists() && appDir.isDirectory()) {
+                File[] splits = appDir.listFiles(new java.io.FilenameFilter() {
+                    @Override
+                    public boolean accept(File dir, String name) {
+                        return name.endsWith(".apk") && !name.equals("base.apk");
+                    }
+                });
+                if (splits != null) {
+                    for (File split : splits) {
+                        BRAssetManager.get(assets).addAssetPath(split.getAbsolutePath());
+                    }
+                }
+            }
+
             Resources hostRes = context.getResources();
             return new Resources(assets, hostRes.getDisplayMetrics(), hostRes.getConfiguration());
         }
