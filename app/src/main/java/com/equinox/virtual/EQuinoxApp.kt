@@ -107,7 +107,7 @@ class EQuinoxApp : Application() {
                 val widevineUuid = java.util.UUID.fromString("edef8ba9-79d6-4ace-a3c8-27dcd51d21ed")
                 mediaDrm = android.media.MediaDrm(widevineUuid)
                 val deviceUniqueId = mediaDrm.getPropertyByteArray(android.media.MediaDrm.PROPERTY_DEVICE_UNIQUE_ID)
-                if (deviceUniqueId != null && deviceUniqueId.isNotEmpty()) {
+                if (deviceUniqueId.isNotEmpty()) {
                     val md = java.security.MessageDigest.getInstance("SHA-256")
                     val digest = md.digest(deviceUniqueId)
                     digest.fold("") { str, it -> str + "%02X".format(it) }.take(16)

@@ -60,7 +60,7 @@ class AuthAndUserManager(
         try {
             // Disable persistence to avoid ashmem/SQLite issues in virtual spaces
             val settings = FirebaseFirestoreSettings.Builder()
-                .setPersistenceEnabled(false)
+                .setLocalCacheSettings(com.google.firebase.firestore.MemoryCacheSettings.newBuilder().build())
                 .build()
             db.firestoreSettings = settings
         } catch (e: Exception) {

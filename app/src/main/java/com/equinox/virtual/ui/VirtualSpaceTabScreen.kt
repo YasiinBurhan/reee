@@ -255,7 +255,7 @@ fun LockedVirtualSpaceView(
     val deviceHwid = remember { com.equinox.virtual.EQuinoxApp.getDeviceHwid() }
     val formattedExpiry = remember(expiryTime) {
         if (expiryTime != null && expiryTime > 0) {
-            val sdf = java.text.SimpleDateFormat("dd MMMM yyyy, HH:mm", java.util.Locale("id", "ID"))
+            val sdf = java.text.SimpleDateFormat("dd MMMM yyyy, HH:mm", java.util.Locale.forLanguageTag("id-ID"))
             sdf.format(java.util.Date(expiryTime))
         } else {
             "Masa aktif telah habis"

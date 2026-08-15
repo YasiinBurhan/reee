@@ -275,7 +275,7 @@ class VirtualSpaceManager(private val application: Application) {
                     for (apk in apkFiles) {
                         try {
                             val packageInfo = packageManager.getPackageArchiveInfo(apk.absolutePath, PackageManager.GET_ACTIVITIES)
-                            if (packageInfo != null && packageInfo.packageName != null) {
+                            if (packageInfo != null) {
                                 val acts = packageInfo.activities
                                 if (acts != null && acts.isNotEmpty()) {
                                     baseApkFile = apk

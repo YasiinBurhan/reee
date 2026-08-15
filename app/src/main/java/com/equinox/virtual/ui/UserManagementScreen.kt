@@ -276,7 +276,7 @@ fun QuickAddDaysDialog(
         else -> 10000L * selectedDays
     }
 
-    val currencyFormatter = java.text.NumberFormat.getCurrencyInstance(Locale("in", "ID"))
+    val currencyFormatter = java.text.NumberFormat.getCurrencyInstance(Locale.forLanguageTag("id-ID"))
 
     AlertDialog(
         onDismissRequest = onDismiss,
