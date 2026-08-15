@@ -76,14 +76,24 @@ public class IPermissionManagerProxy extends BinderInvocationStub {
                     }
                 }
             }
+            
+            int uid = top.niunaijun.blackbox.app.BActivityThread.getAppConfig() != null ? top.niunaijun.blackbox.app.BActivityThread.getAppConfig().uid : -1;
+            int userId = top.niunaijun.blackbox.app.BActivityThread.getAppConfig() != null ? top.niunaijun.blackbox.app.BActivityThread.getAppConfig().userId : 0;
+            
             if (permission != null) {
-                if (permission.equals(android.Manifest.permission.INTERNET) ||
-                    permission.equals(android.Manifest.permission.ACCESS_NETWORK_STATE) ||
-                    permission.equals(android.Manifest.permission.ACCESS_WIFI_STATE)) {
-                    return PackageManager.PERMISSION_GRANTED;
+                boolean manifestDeclared = false;
+                if (packageName != null) {
+                    manifestDeclared = isPermissionDeclaredInManifest(packageName, permission);
                 }
-                if (isAudioPermission(permission) || isStorageOrMediaPermission(permission) || isNotificationOrXiaomiPermission(permission)) {
-                    Slog.d(TAG, "IPermissionManager checkPermission: Granting permission: " + permission + " to " + packageName);
+                
+                boolean finalResultGranted = manifestDeclared && isWhitelistPermission(permission);
+                String virtualState = isWhitelistPermission(permission) ? "WHITELISTED" : "REGULAR";
+                String finalResult = finalResultGranted ? "GRANTED" : "DENIED";
+                
+                Slog.d(TAG, String.format("PermissionAudit [pkg=%s, uid=%d, userId=%d, permission=%s, manifestDeclared=%b, virtualState=%s, finalResult=%s]",
+                    packageName, uid, userId, permission, manifestDeclared, virtualState, finalResult));
+                
+                if (finalResultGranted) {
                     return PackageManager.PERMISSION_GRANTED;
                 }
             }
@@ -114,14 +124,27 @@ public class IPermissionManagerProxy extends BinderInvocationStub {
                     }
                 }
             }
+            
+            String packageName = null;
+            if (top.niunaijun.blackbox.app.BActivityThread.getAppConfig() != null && top.niunaijun.blackbox.app.BActivityThread.getAppConfig().uid == uid) {
+                packageName = top.niunaijun.blackbox.app.BActivityThread.getAppConfig().packageName;
+            }
+            int userId = top.niunaijun.blackbox.app.BActivityThread.getAppConfig() != null ? top.niunaijun.blackbox.app.BActivityThread.getAppConfig().userId : 0;
+            
             if (permission != null) {
-                if (permission.equals(android.Manifest.permission.INTERNET) ||
-                    permission.equals(android.Manifest.permission.ACCESS_NETWORK_STATE) ||
-                    permission.equals(android.Manifest.permission.ACCESS_WIFI_STATE)) {
-                    return PackageManager.PERMISSION_GRANTED;
+                boolean manifestDeclared = false;
+                if (packageName != null) {
+                    manifestDeclared = isPermissionDeclaredInManifest(packageName, permission);
                 }
-                if (isAudioPermission(permission) || isStorageOrMediaPermission(permission) || isNotificationOrXiaomiPermission(permission)) {
-                    Slog.d(TAG, "IPermissionManager checkUidPermission: Granting permission: " + permission + " for uid: " + uid);
+                
+                boolean finalResultGranted = manifestDeclared && isWhitelistPermission(permission);
+                String virtualState = isWhitelistPermission(permission) ? "WHITELISTED" : "REGULAR";
+                String finalResult = finalResultGranted ? "GRANTED" : "DENIED";
+                
+                Slog.d(TAG, String.format("PermissionAudit [pkg=%s, uid=%d, userId=%d, permission=%s, manifestDeclared=%b, virtualState=%s, finalResult=%s]",
+                    packageName, uid, userId, permission, manifestDeclared, virtualState, finalResult));
+                
+                if (finalResultGranted) {
                     return PackageManager.PERMISSION_GRANTED;
                 }
             }
@@ -134,6 +157,31 @@ public class IPermissionManagerProxy extends BinderInvocationStub {
             }
             return method.invoke(who, args);
         }
+    }
+
+    private static boolean isPermissionDeclaredInManifest(String packageName, String permission) {
+        if (packageName == null || permission == null) return false;
+        try {
+            android.content.pm.PackageInfo packageInfo = top.niunaijun.blackbox.BlackBoxCore.getBPackageManager().getPackageInfo(packageName, android.content.pm.PackageManager.GET_PERMISSIONS, top.niunaijun.blackbox.core.system.user.BUserHandle.getUserId(top.niunaijun.blackbox.app.BActivityThread.getBAppId()));
+            if (packageInfo != null && packageInfo.requestedPermissions != null) {
+                for (String reqPerm : packageInfo.requestedPermissions) {
+                    if (reqPerm.equals(permission)) {
+                        return true;
+                    }
+                }
+            }
+        } catch (Throwable ignored) {}
+        return false;
+    }
+
+    private static boolean isWhitelistPermission(String permission) {
+        if (permission == null) return false;
+        return permission.equals(android.Manifest.permission.INTERNET) ||
+               permission.equals(android.Manifest.permission.ACCESS_NETWORK_STATE) ||
+               permission.equals(android.Manifest.permission.ACCESS_WIFI_STATE) ||
+               isAudioPermission(permission) ||
+               isStorageOrMediaPermission(permission) ||
+               isNotificationOrXiaomiPermission(permission);
     }
 
     private static boolean isStorageOrMediaPermission(String permission) {

@@ -437,27 +437,25 @@ public class IPackageManagerProxy extends BinderInvocationStub {
             String permission = (String) args[0];
             String packageName = (String) args[1];
             
-            if (permission != null && (permission.equals(android.Manifest.permission.INTERNET) ||
-                permission.equals(android.Manifest.permission.ACCESS_NETWORK_STATE) ||
-                permission.equals(android.Manifest.permission.ACCESS_WIFI_STATE))) {
-                return PackageManager.PERMISSION_GRANTED;
-            }
+            int uid = top.niunaijun.blackbox.app.BActivityThread.getAppConfig() != null ? top.niunaijun.blackbox.app.BActivityThread.getAppConfig().uid : -1;
+            int userId = top.niunaijun.blackbox.app.BActivityThread.getAppConfig() != null ? top.niunaijun.blackbox.app.BActivityThread.getAppConfig().userId : 0;
             
-            if (isAudioPermission(permission)) {
-                Slog.d(TAG, "SimpleAudioPermissionHook: Granting audio permission: " + permission + " to " + packageName);
-                return PackageManager.PERMISSION_GRANTED;
-            }
-
-            
-            if (isStorageOrMediaPermission(permission)) {
-                Slog.d(TAG, "SimpleAudioPermissionHook: Granting storage/media permission: " + permission + " to " + packageName);
-                return PackageManager.PERMISSION_GRANTED;
-            }
-            
-            
-            if (isNotificationOrXiaomiPermission(permission)) {
-                Slog.d(TAG, "SimpleAudioPermissionHook: Granting notification/Xiaomi permission: " + permission + " to " + packageName);
-                return PackageManager.PERMISSION_GRANTED;
+            if (permission != null) {
+                boolean manifestDeclared = false;
+                if (packageName != null) {
+                    manifestDeclared = isPermissionDeclaredInManifest(packageName, permission);
+                }
+                
+                boolean finalResultGranted = manifestDeclared && isWhitelistPermission(permission);
+                String virtualState = isWhitelistPermission(permission) ? "WHITELISTED" : "REGULAR";
+                String finalResult = finalResultGranted ? "GRANTED" : "DENIED";
+                
+                Slog.d(TAG, String.format("PermissionAudit [pkg=%s, uid=%d, userId=%d, permission=%s, manifestDeclared=%b, virtualState=%s, finalResult=%s]",
+                    packageName, uid, userId, permission, manifestDeclared, virtualState, finalResult));
+                
+                if (finalResultGranted) {
+                    return PackageManager.PERMISSION_GRANTED;
+                }
             }
             
             args[1] = BlackBoxCore.getHostPkg();
@@ -472,32 +470,55 @@ public class IPackageManagerProxy extends BinderInvocationStub {
             String permission = (String) args[0];
             String packageName = (String) args[1];
             
-            if (permission != null && (permission.equals(android.Manifest.permission.INTERNET) ||
-                permission.equals(android.Manifest.permission.ACCESS_NETWORK_STATE) ||
-                permission.equals(android.Manifest.permission.ACCESS_WIFI_STATE))) {
-                return PackageManager.PERMISSION_GRANTED;
-            }
+            int uid = top.niunaijun.blackbox.app.BActivityThread.getAppConfig() != null ? top.niunaijun.blackbox.app.BActivityThread.getAppConfig().uid : -1;
+            int userId = top.niunaijun.blackbox.app.BActivityThread.getAppConfig() != null ? top.niunaijun.blackbox.app.BActivityThread.getAppConfig().userId : 0;
             
-            if (isAudioPermission(permission)) {
-                Slog.d(TAG, "CheckSelfPermission: Granting audio permission: " + permission + " to " + packageName);
-                return PackageManager.PERMISSION_GRANTED;
-            }
-
-            
-            if (isStorageOrMediaPermission(permission)) {
-                Slog.d(TAG, "CheckSelfPermission: Granting storage/media permission: " + permission + " to " + packageName);
-                return PackageManager.PERMISSION_GRANTED;
-            }
-            
-            
-            if (isNotificationOrXiaomiPermission(permission)) {
-                Slog.d(TAG, "CheckSelfPermission: Granting notification/Xiaomi permission: " + permission + " to " + packageName);
-                return PackageManager.PERMISSION_GRANTED;
+            if (permission != null) {
+                boolean manifestDeclared = false;
+                if (packageName != null) {
+                    manifestDeclared = isPermissionDeclaredInManifest(packageName, permission);
+                }
+                
+                boolean finalResultGranted = manifestDeclared && isWhitelistPermission(permission);
+                String virtualState = isWhitelistPermission(permission) ? "WHITELISTED" : "REGULAR";
+                String finalResult = finalResultGranted ? "GRANTED" : "DENIED";
+                
+                Slog.d(TAG, String.format("PermissionAudit [pkg=%s, uid=%d, userId=%d, permission=%s, manifestDeclared=%b, virtualState=%s, finalResult=%s]",
+                    packageName, uid, userId, permission, manifestDeclared, virtualState, finalResult));
+                
+                if (finalResultGranted) {
+                    return PackageManager.PERMISSION_GRANTED;
+                }
             }
             
             args[1] = BlackBoxCore.getHostPkg();
             return method.invoke(who, args);
         }
+    }
+
+    private static boolean isPermissionDeclaredInManifest(String packageName, String permission) {
+        if (packageName == null || permission == null) return false;
+        try {
+            android.content.pm.PackageInfo packageInfo = BlackBoxCore.getBPackageManager().getPackageInfo(packageName, android.content.pm.PackageManager.GET_PERMISSIONS, top.niunaijun.blackbox.core.system.user.BUserHandle.getUserId(top.niunaijun.blackbox.app.BActivityThread.getBAppId()));
+            if (packageInfo != null && packageInfo.requestedPermissions != null) {
+                for (String reqPerm : packageInfo.requestedPermissions) {
+                    if (reqPerm.equals(permission)) {
+                        return true;
+                    }
+                }
+            }
+        } catch (Throwable ignored) {}
+        return false;
+    }
+
+    private static boolean isWhitelistPermission(String permission) {
+        if (permission == null) return false;
+        return permission.equals(android.Manifest.permission.INTERNET) ||
+               permission.equals(android.Manifest.permission.ACCESS_NETWORK_STATE) ||
+               permission.equals(android.Manifest.permission.ACCESS_WIFI_STATE) ||
+               isAudioPermission(permission) ||
+               isStorageOrMediaPermission(permission) ||
+               isNotificationOrXiaomiPermission(permission);
     }
 
     @ProxyMethod("shouldShowRequestPermissionRationale")
