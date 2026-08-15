@@ -54,9 +54,8 @@ public class ResourcesManagerProxy extends ClassInvocationStub {
                                 path.contains(".frro") ||
                                 path.contains("systemui") ||
                                 path.contains("data@resource-cache@"))) {
-                Log.d(TAG, "Blocking problematic ApkAssets load: " + path);
-                
-                return null;
+                Log.d(TAG, "Redirecting problematic ApkAssets load: " + path + " -> /system/framework/framework-res.apk");
+                args[0] = "/system/framework/framework-res.apk";
             }
             
             
@@ -76,9 +75,8 @@ public class ResourcesManagerProxy extends ClassInvocationStub {
                                 path.contains(".frro") ||
                                 path.contains("systemui") ||
                                 path.contains("data@resource-cache@"))) {
-                Log.d(TAG, "Blocking problematic overlay path: " + path);
-                
-                return null;
+                Log.d(TAG, "Redirecting problematic overlay path: " + path + " -> /system/framework/framework-res.apk");
+                args[0] = "/system/framework/framework-res.apk";
             }
             
             

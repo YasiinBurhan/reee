@@ -791,6 +791,9 @@ public class IActivityManagerProxy extends ClassInvocationStub {
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
             MethodParameterUtils.replaceLastUid(args);
             String permission = (String) args[0];
+            if (permission == null) {
+                return PackageManager.PERMISSION_DENIED;
+            }
             if (permission.equals(Manifest.permission.ACCOUNT_MANAGER)
                     || permission.equals(Manifest.permission.SEND_SMS)
                     || permission.equals(Manifest.permission.INTERNET)

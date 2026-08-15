@@ -54,8 +54,8 @@ public class ApkAssetsProxy extends ClassInvocationStub {
                                 path.contains(".frro") ||
                                 path.contains("systemui") ||
                                 path.contains("data@resource-cache@"))) {
-                Log.d(TAG, "Blocking problematic overlay path: " + path);
-                throw new RuntimeException("Blocked problematic overlay path: " + path);
+                Log.d(TAG, "Redirecting problematic overlay path: " + path + " -> /system/framework/framework-res.apk");
+                args[0] = "/system/framework/framework-res.apk";
             }
             
             
@@ -75,8 +75,8 @@ public class ApkAssetsProxy extends ClassInvocationStub {
                                 path.contains(".frro") ||
                                 path.contains("systemui") ||
                                 path.contains("data@resource-cache@"))) {
-                Log.d(TAG, "Blocking problematic native load path: " + path);
-                throw new RuntimeException("Blocked problematic native load path: " + path);
+                Log.d(TAG, "Redirecting problematic native load path: " + path + " -> /system/framework/framework-res.apk");
+                args[0] = "/system/framework/framework-res.apk";
             }
             
             

@@ -262,7 +262,28 @@ public class BActivityThread extends IBActivityThread.Stub {
         if (!BActivityThread.currentActivityThread().isInit()) {
             BActivityThread.currentActivityThread().bindApplication(serviceInfo.packageName, serviceInfo.processName);
         }
-        ClassLoader classLoader = BRLoadedApk.get(mBoundApplication.info).getClassLoader();
+        ClassLoader classLoader = null;
+        if (mBoundApplication != null && mBoundApplication.info != null) {
+            try {
+                classLoader = BRLoadedApk.get(mBoundApplication.info).getClassLoader();
+            } catch (Throwable ignored) {}
+        }
+        if (classLoader == null && mInitialApplication != null) {
+            classLoader = mInitialApplication.getClassLoader();
+        }
+        if (classLoader == null) {
+            try {
+                Context packageContext = BlackBoxCore.getContext().createPackageContext(
+                        serviceInfo.packageName,
+                        Context.CONTEXT_INCLUDE_CODE | Context.CONTEXT_IGNORE_SECURITY);
+                classLoader = packageContext.getClassLoader();
+            } catch (Throwable t) {
+                Slog.e(TAG, "Failed to create package context classloader for " + serviceInfo.packageName, t);
+            }
+        }
+        if (classLoader == null) {
+            classLoader = BActivityThread.class.getClassLoader();
+        }
         JobService service;
         try {
             service = (JobService) classLoader.loadClass(serviceInfo.name).newInstance();
@@ -366,6 +387,19 @@ public class BActivityThread extends IBActivityThread.Stub {
 
         PackageInfo packageInfo = BlackBoxCore.getBPackageManager().getPackageInfo(packageName, PackageManager.GET_PROVIDERS, BActivityThread.getUserId());
         ApplicationInfo applicationInfo = packageInfo.applicationInfo;
+        
+        // Pre-create external sandbox directories to prevent nested directory creation (e.g. GCloudSDKLog) from failing because parents are missing
+        try {
+            File extDataDir = top.niunaijun.blackbox.core.env.BEnvironment.getExternalDataDir(packageName, getUserId());
+            top.niunaijun.blackbox.utils.FileUtils.mkdirs(new File(extDataDir, "files"));
+            top.niunaijun.blackbox.utils.FileUtils.mkdirs(new File(extDataDir, "cache"));
+            File extObbDir = top.niunaijun.blackbox.core.env.BEnvironment.getExternalObbDir(packageName, getUserId());
+            top.niunaijun.blackbox.utils.FileUtils.mkdirs(extObbDir);
+            Slog.d(TAG, "Pre-created virtual sandboxed directories: dataDir=" + extDataDir.getAbsolutePath() + ", obbDir=" + extObbDir.getAbsolutePath());
+        } catch (Throwable t) {
+            Slog.e(TAG, "Failed to pre-create sandbox directories", t);
+        }
+
         if (packageInfo.providers == null) {
             packageInfo.providers = new ProviderInfo[]{};
         }

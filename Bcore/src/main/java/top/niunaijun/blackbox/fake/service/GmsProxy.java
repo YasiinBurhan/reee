@@ -69,11 +69,15 @@ public class GmsProxy extends BinderInvocationStub {
             }
 
             if (stubClass != null) {
-                Method asInterfaceMethod = stubClass.getMethod("asInterface", IBinder.class);
-                Object iface = asInterfaceMethod.invoke(null, binder);
-                if (iface != null) {
-                    Slog.d(TAG, "Successfully obtained IGmsServiceBroker interface using " + stubClass.getName());
-                    return iface;
+                try {
+                    Method asInterfaceMethod = stubClass.getMethod("asInterface", IBinder.class);
+                    Object iface = asInterfaceMethod.invoke(null, binder);
+                    if (iface != null) {
+                        Slog.d(TAG, "Successfully obtained IGmsServiceBroker interface using " + stubClass.getName());
+                        return iface;
+                    }
+                } catch (Throwable t) {
+                    Slog.w(TAG, "Failed to call asInterface on Gms Stub, trying fallback: " + t.getMessage());
                 }
             }
 
