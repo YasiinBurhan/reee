@@ -414,12 +414,12 @@ public class ClassLoaderProxy extends ClassInvocationStub {
             }
             
             
-            Context hostContext = BlackBoxCore.getContext();
-            if (hostContext != null) {
-                ApplicationInfo appInfo = hostContext.getApplicationInfo();
-                if (appInfo != null && appInfo.sourceDir != null) {
-                    Slog.d(TAG, "Using host app APK as DEX fallback: " + appInfo.sourceDir);
-                    return appInfo.sourceDir;
+            String targetPkg = top.niunaijun.blackbox.app.BActivityThread.getAppPackageName();
+            if (targetPkg != null) {
+                ApplicationInfo targetAppInfo = BlackBoxCore.getBPackageManager().getApplicationInfo(targetPkg, 0, top.niunaijun.blackbox.app.BActivityThread.getUserId());
+                if (targetAppInfo != null && targetAppInfo.sourceDir != null && !targetAppInfo.sourceDir.isEmpty()) {
+                    Slog.d(TAG, "Using target app APK as DEX fallback: " + targetAppInfo.sourceDir);
+                    return targetAppInfo.sourceDir;
                 }
             }
             
@@ -456,13 +456,12 @@ public class ClassLoaderProxy extends ClassInvocationStub {
     private static Object recoverDexPathList(Object who, Object[] args) {
         try {
             
-            Context hostContext = BlackBoxCore.getContext();
-            if (hostContext != null) {
-                ApplicationInfo appInfo = hostContext.getApplicationInfo();
-                if (appInfo != null && appInfo.sourceDir != null) {
-                    
-                    Slog.d(TAG, "Recovering DexPathList using host APK: " + appInfo.sourceDir);
-                    return createFallbackDexPathList(who, appInfo.sourceDir);
+            String targetPkg = top.niunaijun.blackbox.app.BActivityThread.getAppPackageName();
+            if (targetPkg != null) {
+                ApplicationInfo targetAppInfo = BlackBoxCore.getBPackageManager().getApplicationInfo(targetPkg, 0, top.niunaijun.blackbox.app.BActivityThread.getUserId());
+                if (targetAppInfo != null && targetAppInfo.sourceDir != null && !targetAppInfo.sourceDir.isEmpty()) {
+                    Slog.d(TAG, "Recovering DexPathList using target APK: " + targetAppInfo.sourceDir);
+                    return createFallbackDexPathList(who, targetAppInfo.sourceDir);
                 }
             }
         } catch (Exception e) {

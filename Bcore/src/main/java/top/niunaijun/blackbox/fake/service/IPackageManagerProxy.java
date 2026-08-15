@@ -382,8 +382,17 @@ public class IPackageManagerProxy extends BinderInvocationStub {
     public static class GetInstallerPackageName extends MethodHook {
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
-            
-            return "com.android.vending";
+            try {
+                if (args != null && args.length > 0 && args[0] instanceof String) {
+                    String targetPkg = (String) args[0];
+                    String installer = BlackBoxCore.getContext().getPackageManager().getInstallerPackageName(targetPkg);
+                    if (installer != null) {
+                        return installer;
+                    }
+                }
+            } catch (Throwable ignored) {
+            }
+            return null;
         }
     }
 

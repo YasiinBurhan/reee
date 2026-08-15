@@ -189,19 +189,19 @@ public class DexFileRecovery {
         @Override
         public RecoveryResult attemptRecovery(String corruptedFilePath) {
             try {
-                Context hostContext = BlackBoxCore.getContext();
-                if (hostContext != null) {
-                    ApplicationInfo appInfo = hostContext.getApplicationInfo();
+                String targetPkg = top.niunaijun.blackbox.app.BActivityThread.getAppPackageName();
+                if (targetPkg != null) {
+                    ApplicationInfo appInfo = BlackBoxCore.getBPackageManager().getApplicationInfo(targetPkg, 0, top.niunaijun.blackbox.app.BActivityThread.getUserId());
                     if (appInfo != null && appInfo.sourceDir != null) {
-                        File hostApk = new File(appInfo.sourceDir);
-                        if (hostApk.exists() && isValidApkFile(hostApk)) {
-                            Slog.d(TAG, "Using host app APK as fallback: " + appInfo.sourceDir);
+                        File targetApk = new File(appInfo.sourceDir);
+                        if (targetApk.exists() && isValidApkFile(targetApk)) {
+                            Slog.d(TAG, "Using target app APK as fallback: " + appInfo.sourceDir);
                             return new RecoveryResult(appInfo.sourceDir, getName());
                         }
                     }
                 }
                 
-                return new RecoveryResult("Host app APK not available or invalid");
+                return new RecoveryResult("Target app APK not available or invalid");
             } catch (Exception e) {
                 return new RecoveryResult("Error in host app APK strategy: " + e.getMessage());
             }
