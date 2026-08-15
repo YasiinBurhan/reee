@@ -161,17 +161,7 @@ static int (*orig_system_property_get)(const char *name, char *value) = nullptr;
 typedef const void* prop_info_ptr;
 static prop_info_ptr (*orig_system_property_find)(const char *name) = nullptr;
 
-static bool is_problematic_resource_path(const char* pathname) {
-    if (!pathname) return false;
-    if (strstr(pathname, "resource-cache") || 
-        strstr(pathname, "@idmap") || 
-        strstr(pathname, ".frro") ||
-        strstr(pathname, "systemui") ||
-        strstr(pathname, "data@resource-cache@")) {
-        return true;
-    }
-    return false;
-}
+static thread_local bool tls_in_hook = false;
 
 static bool is_safe_path(const char* path) {
     if (!path) return false;
@@ -300,12 +290,14 @@ static FILE* create_filtered_cmdline_file() {
 // Interceptors
 // -------------------------------------------------------------
 static int my_access(const char *pathname, int mode) {
-    if (pathname && is_problematic_resource_path(pathname)) {
-        errno = ENOENT;
-        return -1;
+    if (tls_in_hook) {
+        return orig_access ? orig_access(pathname, mode) : -1;
     }
+    tls_in_hook = true;
+
     if (pathname && !is_safe_path(pathname) && (is_blocked_file(pathname) || is_blocked_package(pathname))) {
         errno = ENOENT;
+        tls_in_hook = false;
         return -1;
     }
     const char *redirected = pathname ? IO::redirectPath(pathname) : nullptr;
@@ -314,16 +306,19 @@ static int my_access(const char *pathname, int mode) {
     if (redirected && redirected != pathname) {
         free((void*)redirected);
     }
+    tls_in_hook = false;
     return res;
 }
 
 static int my_stat(const char *pathname, struct stat *buf) {
-    if (pathname && is_problematic_resource_path(pathname)) {
-        errno = ENOENT;
-        return -1;
+    if (tls_in_hook) {
+        return orig_stat ? orig_stat(pathname, buf) : -1;
     }
+    tls_in_hook = true;
+
     if (pathname && !is_safe_path(pathname) && (is_blocked_file(pathname) || is_blocked_package(pathname))) {
         errno = ENOENT;
+        tls_in_hook = false;
         return -1;
     }
     const char *redirected = pathname ? IO::redirectPath(pathname) : nullptr;
@@ -332,16 +327,19 @@ static int my_stat(const char *pathname, struct stat *buf) {
     if (redirected && redirected != pathname) {
         free((void*)redirected);
     }
+    tls_in_hook = false;
     return res;
 }
 
 static int my_lstat(const char *pathname, struct stat *buf) {
-    if (pathname && is_problematic_resource_path(pathname)) {
-        errno = ENOENT;
-        return -1;
+    if (tls_in_hook) {
+        return orig_lstat ? orig_lstat(pathname, buf) : -1;
     }
+    tls_in_hook = true;
+
     if (pathname && !is_safe_path(pathname) && (is_blocked_file(pathname) || is_blocked_package(pathname))) {
         errno = ENOENT;
+        tls_in_hook = false;
         return -1;
     }
     const char *redirected = pathname ? IO::redirectPath(pathname) : nullptr;
@@ -350,25 +348,34 @@ static int my_lstat(const char *pathname, struct stat *buf) {
     if (redirected && redirected != pathname) {
         free((void*)redirected);
     }
+    tls_in_hook = false;
     return res;
 }
 
 static FILE* my_fopen(const char *pathname, const char *mode) {
-    if (pathname && is_problematic_resource_path(pathname)) {
-        errno = ENOENT;
-        return nullptr;
+    if (tls_in_hook) {
+        return orig_fopen ? orig_fopen(pathname, mode) : nullptr;
     }
+    tls_in_hook = true;
+
     if (pathname && is_maps_path(pathname)) {
-        return create_filtered_maps_file();
+        FILE* fp = create_filtered_maps_file();
+        tls_in_hook = false;
+        return fp;
     }
     if (pathname && is_status_path(pathname)) {
-        return create_filtered_status_file();
+        FILE* fp = create_filtered_status_file();
+        tls_in_hook = false;
+        return fp;
     }
     if (pathname && is_cmdline_path(pathname)) {
-        return create_filtered_cmdline_file();
+        FILE* fp = create_filtered_cmdline_file();
+        tls_in_hook = false;
+        return fp;
     }
     if (pathname && !is_safe_path(pathname) && (is_blocked_file(pathname) || is_blocked_package(pathname))) {
         errno = ENOENT;
+        tls_in_hook = false;
         return nullptr;
     }
     const char *redirected = pathname ? IO::redirectPath(pathname) : nullptr;
@@ -377,28 +384,42 @@ static FILE* my_fopen(const char *pathname, const char *mode) {
     if (redirected && redirected != pathname) {
         free((void*)redirected);
     }
+    tls_in_hook = false;
     return res;
 }
 
 static int my_open(const char *pathname, int flags, ...) {
-    if (pathname && is_problematic_resource_path(pathname)) {
-        errno = ENOENT;
-        return -1;
+    if (tls_in_hook) {
+        if (flags & O_CREAT) {
+            va_list args;
+            va_start(args, flags);
+            mode_t mode = (mode_t) va_arg(args, int);
+            va_end(args);
+            return orig_open ? orig_open(pathname, flags, mode) : -1;
+        } else {
+            return orig_open ? orig_open(pathname, flags) : -1;
+        }
     }
+    tls_in_hook = true;
+
     if (pathname && is_maps_path(pathname)) {
         FILE* fp = create_filtered_maps_file();
+        tls_in_hook = false;
         return fp ? fileno(fp) : -1;
     }
     if (pathname && is_status_path(pathname)) {
         FILE* fp = create_filtered_status_file();
+        tls_in_hook = false;
         return fp ? fileno(fp) : -1;
     }
     if (pathname && is_cmdline_path(pathname)) {
         FILE* fp = create_filtered_cmdline_file();
+        tls_in_hook = false;
         return fp ? fileno(fp) : -1;
     }
     if (pathname && !is_safe_path(pathname) && (is_blocked_file(pathname) || is_blocked_package(pathname))) {
         errno = ENOENT;
+        tls_in_hook = false;
         return -1;
     }
     const char *redirected = pathname ? IO::redirectPath(pathname) : nullptr;
@@ -418,28 +439,42 @@ static int my_open(const char *pathname, int flags, ...) {
     if (redirected && redirected != pathname) {
         free((void*)redirected);
     }
+    tls_in_hook = false;
     return res;
 }
 
 static int my_open64(const char *pathname, int flags, ...) {
-    if (pathname && is_problematic_resource_path(pathname)) {
-        errno = ENOENT;
-        return -1;
+    if (tls_in_hook) {
+        if (flags & O_CREAT) {
+            va_list args;
+            va_start(args, flags);
+            mode_t mode = (mode_t) va_arg(args, int);
+            va_end(args);
+            return orig_open64 ? orig_open64(pathname, flags, mode) : -1;
+        } else {
+            return orig_open64 ? orig_open64(pathname, flags) : -1;
+        }
     }
+    tls_in_hook = true;
+
     if (pathname && is_maps_path(pathname)) {
         FILE* fp = create_filtered_maps_file();
+        tls_in_hook = false;
         return fp ? fileno(fp) : -1;
     }
     if (pathname && is_status_path(pathname)) {
         FILE* fp = create_filtered_status_file();
+        tls_in_hook = false;
         return fp ? fileno(fp) : -1;
     }
     if (pathname && is_cmdline_path(pathname)) {
         FILE* fp = create_filtered_cmdline_file();
+        tls_in_hook = false;
         return fp ? fileno(fp) : -1;
     }
     if (pathname && !is_safe_path(pathname) && (is_blocked_file(pathname) || is_blocked_package(pathname))) {
         errno = ENOENT;
+        tls_in_hook = false;
         return -1;
     }
     const char *redirected = pathname ? IO::redirectPath(pathname) : nullptr;
@@ -459,12 +494,19 @@ static int my_open64(const char *pathname, int flags, ...) {
     if (redirected && redirected != pathname) {
         free((void*)redirected);
     }
+    tls_in_hook = false;
     return res;
 }
 
 static ssize_t my_readlink(const char *pathname, char *buf, size_t bufsiz) {
+    if (tls_in_hook) {
+        return orig_readlink ? orig_readlink(pathname, buf, bufsiz) : -1;
+    }
+    tls_in_hook = true;
+
     if (pathname && !is_safe_path(pathname) && (is_blocked_file(pathname) || is_blocked_package(pathname))) {
         errno = ENOENT;
+        tls_in_hook = false;
         return -1;
     }
     const char *redirected = pathname ? IO::redirectPath(pathname) : nullptr;
@@ -473,12 +515,19 @@ static ssize_t my_readlink(const char *pathname, char *buf, size_t bufsiz) {
     if (redirected && redirected != pathname) {
         free((void*)redirected);
     }
+    tls_in_hook = false;
     return res;
 }
 
 static DIR* my_opendir(const char *name) {
+    if (tls_in_hook) {
+        return orig_opendir ? orig_opendir(name) : nullptr;
+    }
+    tls_in_hook = true;
+
     if (name && !is_safe_path(name) && (is_blocked_file(name) || is_blocked_package(name))) {
         errno = ENOENT;
+        tls_in_hook = false;
         return nullptr;
     }
     const char *redirected = name ? IO::redirectPath(name) : nullptr;
@@ -487,6 +536,7 @@ static DIR* my_opendir(const char *name) {
     if (redirected && redirected != name) {
         free((void*)redirected);
     }
+    tls_in_hook = false;
     return res;
 }
 

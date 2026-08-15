@@ -38,35 +38,7 @@ static char *replace(const char *str, const char *src, const char *dst) {
 }
 
 const char *IO::redirectPath(const char *__path) {
-    if (strstr(__path, "resource-cache")) {
-        ALOGD("Blocking resource-cache path: %s", __path);
-        return "/dev/null";
-    }
-    
-    if (strstr(__path, "@idmap")) {
-        ALOGD("Blocking idmap path: %s", __path);
-        return "/dev/null";
-    }
-    
-    if (strstr(__path, "systemui") && (strstr(__path, ".frro") || strstr(__path, "-accent-") || strstr(__path, "-dynamic-") || strstr(__path, "-neutral-"))) {
-        ALOGD("Blocking systemui problematic path: %s", __path);
-        return "/dev/null";
-    }
-    
-    if (strstr(__path, "data@resource-cache@")) {
-        ALOGD("Blocking data@resource-cache@ pattern: %s", __path);
-        return "/dev/null";
-    }
-    
-    if (strstr(__path, ".frro")) {
-        ALOGD("Blocking .frro file: %s", __path);
-        return "/dev/null";
-    }
-    
-    if (strstr(__path, "systemui")) {
-        ALOGD("Blocking systemui path: %s", __path);
-        return "/dev/null";
-    }
+    if (!__path) return nullptr;
 
     std::lock_guard<std::mutex> lock(relocate_rule_mutex);
     for (auto iterator = relocate_rule.begin(); iterator != relocate_rule.end(); ++iterator) {
