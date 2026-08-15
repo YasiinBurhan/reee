@@ -15,6 +15,10 @@ import top.niunaijun.blackbox.utils.Slog;
 public class WorkManagerProxy extends ClassInvocationStub {
     public static final String TAG = "WorkManagerProxy";
 
+    private static Class<?> getWorkClass(String className) throws ClassNotFoundException {
+        return Class.forName(className, true, top.niunaijun.blackbox.app.BActivityThread.getAppClassLoader());
+    }
+
     public WorkManagerProxy() {
         super();
     }
@@ -25,7 +29,7 @@ public class WorkManagerProxy extends ClassInvocationStub {
             Context context = BlackBoxCore.getContext();
             if (context != null) {
                 
-                Class<?> workManagerClass = Class.forName("androidx.work.WorkManager");
+                Class<?> workManagerClass = getWorkClass("androidx.work.WorkManager");
                 Method getInstanceMethod = workManagerClass.getMethod("getInstance", Context.class);
                 return getInstanceMethod.invoke(null, context);
             }
@@ -75,9 +79,7 @@ public class WorkManagerProxy extends ClassInvocationStub {
         
         private Object createMockWorkResult() {
             try {
-                
-                Class<?> workResultClass = Class.forName("androidx.work.Operation");
-                
+                Class<?> workResultClass = getWorkClass("androidx.work.Operation");
                 return null; 
             } catch (Exception e) {
                 Slog.w(TAG, "WorkManager: Failed to create mock result", e);
@@ -113,9 +115,7 @@ public class WorkManagerProxy extends ClassInvocationStub {
         
         private Object createMockWorkResult() {
             try {
-                
-                Class<?> workResultClass = Class.forName("androidx.work.Operation");
-                
+                Class<?> workResultClass = getWorkClass("androidx.work.Operation");
                 return null; 
             } catch (Exception e) {
                 Slog.w(TAG, "WorkManager: Failed to create mock result", e);
@@ -152,7 +152,7 @@ public class WorkManagerProxy extends ClassInvocationStub {
         private Object createMockWorkResult() {
             try {
                 
-                Class<?> workResultClass = Class.forName("androidx.work.Operation");
+                Class<?> workResultClass = getWorkClass("androidx.work.Operation");
                 
                 return null; 
             } catch (Exception e) {
@@ -230,7 +230,7 @@ public class WorkManagerProxy extends ClassInvocationStub {
         private Object createEmptyWorkInfoList() {
             try {
                 
-                Class<?> workInfoListClass = Class.forName("androidx.work.WorkInfo");
+                Class<?> workInfoListClass = getWorkClass("androidx.work.WorkInfo");
                 
                 return java.util.Collections.emptyList();
             } catch (Exception e) {

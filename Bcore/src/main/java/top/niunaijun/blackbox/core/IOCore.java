@@ -71,8 +71,19 @@ public class IOCore {
 
         
         String key = mTrieTree.search(path);
-        if (!TextUtils.isEmpty(key))
+        if (!TextUtils.isEmpty(key)) {
             path = path.replace(key, Objects.requireNonNull(mRedirectMap.get(key)));
+            
+            try {
+                File file = new File(path);
+                if (!file.exists()) {
+                    File parent = file.getParentFile();
+                    if (parent != null && !parent.exists()) {
+                        parent.mkdirs();
+                    }
+                }
+            } catch (Throwable ignored) {}
+        }
 
         return path;
     }

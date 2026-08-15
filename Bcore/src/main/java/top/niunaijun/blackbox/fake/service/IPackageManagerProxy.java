@@ -135,6 +135,14 @@ public class IPackageManagerProxy extends BinderInvocationStub {
             
             
             if ("com.google.android.gms".equals(packageName) || "com.android.vending".equals(packageName)) {
+                try {
+                    PackageInfo realInfo = BlackBoxCore.getPackageManager().getPackageInfo(packageName, flags);
+                    if (realInfo != null) {
+                        return realInfo;
+                    }
+                } catch (Throwable t) {
+                    Slog.w(TAG, "Failed to retrieve real PackageInfo for GMS: " + packageName, t);
+                }
                 return createFakeGmsOrStorePackageInfo(packageName);
             }
             
@@ -282,6 +290,14 @@ public class IPackageManagerProxy extends BinderInvocationStub {
             int flags = MethodParameterUtils.toInt(args[1]);
 
             if ("com.google.android.gms".equals(packageName) || "com.android.vending".equals(packageName)) {
+                try {
+                    ApplicationInfo realAppInfo = BlackBoxCore.getPackageManager().getApplicationInfo(packageName, flags);
+                    if (realAppInfo != null) {
+                        return realAppInfo;
+                    }
+                } catch (Throwable t) {
+                    Slog.w(TAG, "Failed to retrieve real ApplicationInfo for GMS: " + packageName, t);
+                }
                 ApplicationInfo appInfo = new ApplicationInfo();
                 appInfo.packageName = packageName;
                 appInfo.name = "com.google.android.gms".equals(packageName) ? "Google Play services" : "Google Play Store";
