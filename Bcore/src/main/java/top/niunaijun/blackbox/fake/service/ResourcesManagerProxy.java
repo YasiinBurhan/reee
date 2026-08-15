@@ -47,19 +47,13 @@ public class ResourcesManagerProxy extends ClassInvocationStub {
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
             String path = (String) args[0];
-            
-            
-            if (path != null && (path.contains("resource-cache") || 
-                                path.contains("@idmap") || 
-                                path.contains(".frro") ||
-                                path.contains("systemui") ||
-                                path.contains("data@resource-cache@"))) {
-                Log.d(TAG, "Redirecting problematic ApkAssets load: " + path + " -> /system/framework/framework-res.apk");
-                args[0] = "/system/framework/framework-res.apk";
+            try {
+                return method.invoke(who, args);
+            } catch (Throwable t) {
+                Log.w(TAG, String.format("Resource_Audit [caller=%s, path=%s, action=LoadApkAssets, error=%s]",
+                        who != null ? who.getClass().getName() : "null", path, t.getMessage()));
+                throw t;
             }
-            
-            
-            return method.invoke(who, args);
         }
     }
 
@@ -68,19 +62,13 @@ public class ResourcesManagerProxy extends ClassInvocationStub {
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
             String path = (String) args[0];
-            
-            
-            if (path != null && (path.contains("resource-cache") || 
-                                path.contains("@idmap") || 
-                                path.contains(".frro") ||
-                                path.contains("systemui") ||
-                                path.contains("data@resource-cache@"))) {
-                Log.d(TAG, "Redirecting problematic overlay path: " + path + " -> /system/framework/framework-res.apk");
-                args[0] = "/system/framework/framework-res.apk";
+            try {
+                return method.invoke(who, args);
+            } catch (Throwable t) {
+                Log.w(TAG, String.format("Resource_Audit [caller=%s, path=%s, action=LoadOverlayFromPath, error=%s]",
+                        who != null ? who.getClass().getName() : "null", path, t.getMessage()));
+                throw t;
             }
-            
-            
-            return method.invoke(who, args);
         }
     }
 }

@@ -133,29 +133,40 @@ public class IPackageManagerProxy extends BinderInvocationStub {
             String packageName = (String) args[0];
             int flags = MethodParameterUtils.toInt(args[1]);
             
-            
             if ("com.google.android.gms".equals(packageName) || "com.android.vending".equals(packageName)) {
                 try {
                     PackageInfo realInfo = BlackBoxCore.getPackageManager().getPackageInfo(packageName, flags);
-                    if (realInfo != null) {
+                    if (realInfo != null && realInfo.applicationInfo != null) {
+                        int sigCount = 0;
+                        String sigSource = "NONE";
+                        if (realInfo.signingInfo != null) {
+                            sigSource = "signingInfo";
+                            if (realInfo.signingInfo.hasMultipleSigners()) {
+                                sigCount = realInfo.signingInfo.getApkContentsSigners() != null ? realInfo.signingInfo.getApkContentsSigners().length : 0;
+                            } else if (realInfo.signingInfo.getSigningCertificateHistory() != null) {
+                                sigCount = realInfo.signingInfo.getSigningCertificateHistory().length;
+                            }
+                        } else if (realInfo.signatures != null) {
+                            sigSource = "signatures";
+                            sigCount = realInfo.signatures.length;
+                        }
+                        Slog.d(TAG, String.format("GMS_Audit [isHostGmsInstalled=true, pkg=%s, uid=%d, sourceDir=%s, signingInfoSource=%s, sigCount=%d, versionCode=%d, versionName=%s, path=HOST_DELEGATION]",
+                                packageName, realInfo.applicationInfo.uid, realInfo.applicationInfo.sourceDir, sigSource, sigCount, realInfo.versionCode, realInfo.versionName));
                         return realInfo;
                     }
                 } catch (Throwable t) {
-                    Slog.w(TAG, "Failed to retrieve real PackageInfo for GMS: " + packageName, t);
+                    Slog.w(TAG, "Host GMS package lookup returned exception: " + t.getMessage());
                 }
-                return createFakeGmsOrStorePackageInfo(packageName);
+                Slog.d(TAG, String.format("GMS_Audit [isHostGmsInstalled=false, pkg=%s, path=CAPABILITY_UNAVAILABLE]", packageName));
+                return null;
             }
             
             PackageInfo packageInfo = BlackBoxCore.getBPackageManager().getPackageInfo(packageName, flags, BlackBoxCore.getUserId());
             if (packageInfo != null) {
-                
                 if (packageInfo.requestedPermissions != null && packageInfo.requestedPermissionsFlags != null) {
                     for (int i = 0; i < packageInfo.requestedPermissions.length; i++) {
                         String perm = packageInfo.requestedPermissions[i];
-                        if (perm != null && (perm.equals(android.Manifest.permission.RECORD_AUDIO)
-                                || perm.equals("android.permission.FOREGROUND_SERVICE_MICROPHONE")
-                                || perm.equals(android.Manifest.permission.MODIFY_AUDIO_SETTINGS)
-                                || perm.equals(android.Manifest.permission.CAPTURE_AUDIO_OUTPUT))) {
+                        if (perm != null && isWhitelistPermission(perm)) {
                             packageInfo.requestedPermissionsFlags[i] |= PackageInfo.REQUESTED_PERMISSION_GRANTED;
                         }
                     }
@@ -166,23 +177,6 @@ public class IPackageManagerProxy extends BinderInvocationStub {
                 return method.invoke(who, args);
             }
             return null;
-        }
-        
-        private PackageInfo createFakeGmsOrStorePackageInfo(String packageName) {
-            PackageInfo packageInfo = new PackageInfo();
-            packageInfo.packageName = packageName;
-            packageInfo.versionName = "23.40.14";
-            packageInfo.versionCode = 234014000;
-            
-            ApplicationInfo appInfo = new ApplicationInfo();
-            appInfo.packageName = packageName;
-            appInfo.name = "com.google.android.gms".equals(packageName) ? "Google Play services" : "Google Play Store";
-            appInfo.flags = ApplicationInfo.FLAG_SYSTEM | ApplicationInfo.FLAG_HAS_CODE;
-            appInfo.uid = 10001; 
-            packageInfo.applicationInfo = appInfo;
-            
-            Slog.d(TAG, "GetPackageInfo: Providing fake info for " + packageName);
-            return packageInfo;
         }
     }
 
@@ -293,17 +287,15 @@ public class IPackageManagerProxy extends BinderInvocationStub {
                 try {
                     ApplicationInfo realAppInfo = BlackBoxCore.getPackageManager().getApplicationInfo(packageName, flags);
                     if (realAppInfo != null) {
+                        Slog.d(TAG, String.format("GMS_AppInfo_Audit [isHostGmsInstalled=true, pkg=%s, uid=%d, sourceDir=%s, path=HOST_DELEGATION]",
+                                packageName, realAppInfo.uid, realAppInfo.sourceDir));
                         return realAppInfo;
                     }
                 } catch (Throwable t) {
-                    Slog.w(TAG, "Failed to retrieve real ApplicationInfo for GMS: " + packageName, t);
+                    Slog.w(TAG, "Host GMS ApplicationInfo lookup returned exception: " + t.getMessage());
                 }
-                ApplicationInfo appInfo = new ApplicationInfo();
-                appInfo.packageName = packageName;
-                appInfo.name = "com.google.android.gms".equals(packageName) ? "Google Play services" : "Google Play Store";
-                appInfo.flags = ApplicationInfo.FLAG_SYSTEM | ApplicationInfo.FLAG_HAS_CODE;
-                appInfo.uid = 10001;
-                return appInfo;
+                Slog.d(TAG, String.format("GMS_AppInfo_Audit [isHostGmsInstalled=false, pkg=%s, path=CAPABILITY_UNAVAILABLE]", packageName));
+                return null;
             }
 
             ApplicationInfo applicationInfo = BlackBoxCore.getBPackageManager().getApplicationInfo(packageName, flags, BlackBoxCore.getUserId());

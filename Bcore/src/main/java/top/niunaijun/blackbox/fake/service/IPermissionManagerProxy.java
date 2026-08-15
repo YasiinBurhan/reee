@@ -77,15 +77,15 @@ public class IPermissionManagerProxy extends BinderInvocationStub {
                 }
             }
             
+            if (packageName == null && top.niunaijun.blackbox.app.BActivityThread.getAppConfig() != null) {
+                packageName = top.niunaijun.blackbox.app.BActivityThread.getAppConfig().packageName;
+            }
+            
             int uid = top.niunaijun.blackbox.app.BActivityThread.getAppConfig() != null ? top.niunaijun.blackbox.app.BActivityThread.getAppConfig().uid : -1;
             int userId = top.niunaijun.blackbox.app.BActivityThread.getAppConfig() != null ? top.niunaijun.blackbox.app.BActivityThread.getAppConfig().userId : 0;
             
             if (permission != null) {
-                boolean manifestDeclared = false;
-                if (packageName != null) {
-                    manifestDeclared = isPermissionDeclaredInManifest(packageName, permission);
-                }
-                
+                boolean manifestDeclared = isPermissionDeclaredInManifest(packageName, permission);
                 boolean finalResultGranted = manifestDeclared && isWhitelistPermission(permission);
                 String virtualState = isWhitelistPermission(permission) ? "WHITELISTED" : "REGULAR";
                 String finalResult = finalResultGranted ? "GRANTED" : "DENIED";
@@ -126,17 +126,13 @@ public class IPermissionManagerProxy extends BinderInvocationStub {
             }
             
             String packageName = null;
-            if (top.niunaijun.blackbox.app.BActivityThread.getAppConfig() != null && top.niunaijun.blackbox.app.BActivityThread.getAppConfig().uid == uid) {
+            if (top.niunaijun.blackbox.app.BActivityThread.getAppConfig() != null) {
                 packageName = top.niunaijun.blackbox.app.BActivityThread.getAppConfig().packageName;
             }
             int userId = top.niunaijun.blackbox.app.BActivityThread.getAppConfig() != null ? top.niunaijun.blackbox.app.BActivityThread.getAppConfig().userId : 0;
             
             if (permission != null) {
-                boolean manifestDeclared = false;
-                if (packageName != null) {
-                    manifestDeclared = isPermissionDeclaredInManifest(packageName, permission);
-                }
-                
+                boolean manifestDeclared = isPermissionDeclaredInManifest(packageName, permission);
                 boolean finalResultGranted = manifestDeclared && isWhitelistPermission(permission);
                 String virtualState = isWhitelistPermission(permission) ? "WHITELISTED" : "REGULAR";
                 String finalResult = finalResultGranted ? "GRANTED" : "DENIED";

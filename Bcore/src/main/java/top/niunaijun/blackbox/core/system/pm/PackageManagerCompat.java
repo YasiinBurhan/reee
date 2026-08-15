@@ -182,11 +182,13 @@ public class PackageManagerCompat {
                 for (int i = 0; i < N; i++) {
                     final String perm = p.requestedPermissions.get(i);
                     pi.requestedPermissions[i] = perm;
-                    
-
-
-
-
+                    if (perm != null && (perm.equals(android.Manifest.permission.INTERNET)
+                            || perm.equals(android.Manifest.permission.ACCESS_NETWORK_STATE)
+                            || perm.equals(android.Manifest.permission.ACCESS_WIFI_STATE)
+                            || perm.equals(android.Manifest.permission.RECORD_AUDIO)
+                            || perm.equals("android.permission.FOREGROUND_SERVICE_MICROPHONE"))) {
+                        pi.requestedPermissionsFlags[i] |= PackageInfo.REQUESTED_PERMISSION_GRANTED;
+                    }
                 }
             }
         }

@@ -571,6 +571,7 @@ void AntiDetection::init() {
 } // namespace blackbox
 
 extern "C" JNIEXPORT void JNICALL Java_top_niunaijun_blackbox_core_IOCore_setTargetPackageNative(JNIEnv *env, jclass clazz, jstring packageName) {
+    (void) clazz;
     if (packageName == nullptr) return;
     const char *pkg = env->GetStringUTFChars(packageName, nullptr);
     if (pkg) {
