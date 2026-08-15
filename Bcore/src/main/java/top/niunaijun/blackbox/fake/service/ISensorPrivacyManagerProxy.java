@@ -81,47 +81,115 @@ public class ISensorPrivacyManagerProxy extends BinderInvocationStub {
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
             Slog.d(TAG, "SensorPrivacy: isSensorPrivacyEnabled returning false");
-            return false;
+            return Boolean.FALSE;
         }
     }
 
-    
     @ProxyMethod("isSensorPrivacyEnabledForUser")
     public static class IsSensorPrivacyEnabledForUser extends MethodHook {
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
             Slog.d(TAG, "SensorPrivacy: isSensorPrivacyEnabledForUser returning false");
-            return false;
+            return Boolean.FALSE;
         }
     }
 
-    
     @ProxyMethod("isSensorPrivacyEnabledForProfile")
     public static class IsSensorPrivacyEnabledForProfile extends MethodHook {
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
             Slog.d(TAG, "SensorPrivacy: isSensorPrivacyEnabledForProfile returning false");
-            return false;
+            return Boolean.FALSE;
         }
     }
 
-    
+    @ProxyMethod("isToggleSensorPrivacyEnabled")
+    public static class IsToggleSensorPrivacyEnabled extends MethodHook {
+        @Override
+        protected Object hook(Object who, Method method, Object[] args) throws Throwable {
+            Slog.d(TAG, "SensorPrivacy: isToggleSensorPrivacyEnabled returning false");
+            return Boolean.FALSE;
+        }
+    }
+
+    @ProxyMethod("isCombinedToggleSensorPrivacyEnabled")
+    public static class IsCombinedToggleSensorPrivacyEnabled extends MethodHook {
+        @Override
+        protected Object hook(Object who, Method method, Object[] args) throws Throwable {
+            Slog.d(TAG, "SensorPrivacy: isCombinedToggleSensorPrivacyEnabled returning false");
+            return Boolean.FALSE;
+        }
+    }
+
+    @ProxyMethod("addSensorPrivacyListener")
+    public static class AddSensorPrivacyListener extends MethodHook {
+        @Override
+        protected Object hook(Object who, Method method, Object[] args) throws Throwable {
+            Slog.d(TAG, "SensorPrivacy: addSensorPrivacyListener stubbed");
+            return null;
+        }
+    }
+
+    @ProxyMethod("addToggleSensorPrivacyListener")
+    public static class AddToggleSensorPrivacyListener extends MethodHook {
+        @Override
+        protected Object hook(Object who, Method method, Object[] args) throws Throwable {
+            Slog.d(TAG, "SensorPrivacy: addToggleSensorPrivacyListener stubbed");
+            return null;
+        }
+    }
+
+    @ProxyMethod("removeSensorPrivacyListener")
+    public static class RemoveSensorPrivacyListener extends MethodHook {
+        @Override
+        protected Object hook(Object who, Method method, Object[] args) throws Throwable {
+            Slog.d(TAG, "SensorPrivacy: removeSensorPrivacyListener stubbed");
+            return null;
+        }
+    }
+
+    @ProxyMethod("removeToggleSensorPrivacyListener")
+    public static class RemoveToggleSensorPrivacyListener extends MethodHook {
+        @Override
+        protected Object hook(Object who, Method method, Object[] args) throws Throwable {
+            Slog.d(TAG, "SensorPrivacy: removeToggleSensorPrivacyListener stubbed");
+            return null;
+        }
+    }
+
     @ProxyMethod("setSensorPrivacy")
     public static class SetSensorPrivacy extends MethodHook {
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
-            Slog.d(TAG, "SensorPrivacy: setSensorPrivacy allowing");
-            return method.invoke(who, args);
+            Slog.d(TAG, "SensorPrivacy: setSensorPrivacy no-op");
+            return null;
         }
     }
 
-    
     @ProxyMethod("setSensorPrivacyForProfile")
     public static class SetSensorPrivacyForProfile extends MethodHook {
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
-            Slog.d(TAG, "SensorPrivacy: setSensorPrivacyForProfile allowing");
-            return method.invoke(who, args);
+            Slog.d(TAG, "SensorPrivacy: setSensorPrivacyForProfile no-op");
+            return null;
+        }
+    }
+
+    @ProxyMethod("setToggleSensorPrivacy")
+    public static class SetToggleSensorPrivacy extends MethodHook {
+        @Override
+        protected Object hook(Object who, Method method, Object[] args) throws Throwable {
+            Slog.d(TAG, "SensorPrivacy: setToggleSensorPrivacy no-op");
+            return null;
+        }
+    }
+
+    @ProxyMethod("setToggleSensorPrivacyForProfileGroup")
+    public static class SetToggleSensorPrivacyForProfileGroup extends MethodHook {
+        @Override
+        protected Object hook(Object who, Method method, Object[] args) throws Throwable {
+            Slog.d(TAG, "SensorPrivacy: setToggleSensorPrivacyForProfileGroup no-op");
+            return null;
         }
     }
 }
