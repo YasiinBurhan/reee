@@ -459,26 +459,6 @@ void ImGuiRenderEngine::init(const char* packageName) {
     }
 
     g_TargetAppPackage = packageName;
-    
-    // Strict native-side whitelist of cloned apps
-    bool isWhitelisted = (g_TargetAppPackage == "com.mobile.legends" ||
-                         g_TargetAppPackage == "com.tencent.ig" ||
-                         g_TargetAppPackage == "com.pubg.imobile" ||
-                         g_TargetAppPackage == "com.dts.freefireth" ||
-                         g_TargetAppPackage == "com.dts.freefirebg" ||
-                         g_TargetAppPackage == "com.miHoYo.GenshinImpact" ||
-                         g_TargetAppPackage == "com.tencent.tmgp.sgame" ||
-                         g_TargetAppPackage == "com.riotgames.league.wildrift" ||
-                         g_TargetAppPackage == "com.activision.callofduty.shooter" ||
-                         g_TargetAppPackage == "com.garena.game.codm");
-
-    if (!isWhitelisted) {
-        LOGD("ImGuiRenderEngine: Package %s is not in the whitelist. Skipping overlay initialization.", g_TargetAppPackage.c_str());
-        g_RenderEnabled.store(false);
-        g_ImGuiState.store(ImGuiState::Disabled);
-        g_GuestState.store(GuestRenderState::NoGuest);
-        return;
-    }
 
     g_GuestState.store(GuestRenderState::GuestRunning);
     g_ImGuiState.store(ImGuiState::WaitingForSurface);
@@ -486,7 +466,7 @@ void ImGuiRenderEngine::init(const char* packageName) {
 
     if (!g_HooksInstalled.exchange(true)) {
         int res = shadowhook_init(SHADOWHOOK_MODE_SHARED, true);
-        LOGD("Initializing ImGuiRenderEngine ShadowHook PLT Hooks for whitelisted package: %s (ShadowHook init res: %d)", g_TargetAppPackage.c_str(), res);
+        LOGD("Initializing ImGuiRenderEngine ShadowHook PLT Hooks for package: %s (ShadowHook init res: %d)", g_TargetAppPackage.c_str(), res);
 
         const char* default_libs[] = {
             "libEGL.so",

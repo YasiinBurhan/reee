@@ -217,8 +217,8 @@ static FILE* create_filtered_maps_file() {
 
     FILE* tmp_fp = tmpfile();
     if (!tmp_fp) {
-        fclose(real_fp);
-        return nullptr;
+        rewind(real_fp);
+        return real_fp;
     }
 
     char buffer[1024];
@@ -238,8 +238,8 @@ static FILE* create_filtered_status_file() {
 
     FILE* tmp_fp = tmpfile();
     if (!tmp_fp) {
-        fclose(real_fp);
-        return nullptr;
+        rewind(real_fp);
+        return real_fp;
     }
 
     std::string target_pkg;
@@ -268,7 +268,9 @@ static FILE* create_filtered_status_file() {
 
 static FILE* create_filtered_cmdline_file() {
     FILE* tmp_fp = tmpfile();
-    if (!tmp_fp) return nullptr;
+    if (!tmp_fp) {
+        return orig_fopen ? orig_fopen("/proc/self/cmdline", "r") : fopen("/proc/self/cmdline", "r");
+    }
 
     std::string target_pkg;
     {
@@ -402,21 +404,6 @@ static int my_open(const char *pathname, int flags, ...) {
     }
     tls_in_hook = true;
 
-    if (pathname && is_maps_path(pathname)) {
-        FILE* fp = create_filtered_maps_file();
-        tls_in_hook = false;
-        return fp ? fileno(fp) : -1;
-    }
-    if (pathname && is_status_path(pathname)) {
-        FILE* fp = create_filtered_status_file();
-        tls_in_hook = false;
-        return fp ? fileno(fp) : -1;
-    }
-    if (pathname && is_cmdline_path(pathname)) {
-        FILE* fp = create_filtered_cmdline_file();
-        tls_in_hook = false;
-        return fp ? fileno(fp) : -1;
-    }
     if (pathname && !is_safe_path(pathname) && (is_blocked_file(pathname) || is_blocked_package(pathname))) {
         errno = ENOENT;
         tls_in_hook = false;
@@ -457,21 +444,6 @@ static int my_open64(const char *pathname, int flags, ...) {
     }
     tls_in_hook = true;
 
-    if (pathname && is_maps_path(pathname)) {
-        FILE* fp = create_filtered_maps_file();
-        tls_in_hook = false;
-        return fp ? fileno(fp) : -1;
-    }
-    if (pathname && is_status_path(pathname)) {
-        FILE* fp = create_filtered_status_file();
-        tls_in_hook = false;
-        return fp ? fileno(fp) : -1;
-    }
-    if (pathname && is_cmdline_path(pathname)) {
-        FILE* fp = create_filtered_cmdline_file();
-        tls_in_hook = false;
-        return fp ? fileno(fp) : -1;
-    }
     if (pathname && !is_safe_path(pathname) && (is_blocked_file(pathname) || is_blocked_package(pathname))) {
         errno = ENOENT;
         tls_in_hook = false;
@@ -628,8 +600,4 @@ extern "C" JNIEXPORT void JNICALL Java_top_niunaijun_blackbox_core_IOCore_setTar
         blackbox::AntiDetection::setTargetPackage(pkg);
         env->ReleaseStringUTFChars(packageName, pkg);
     }
-}
-
-__attribute__((constructor)) void install_antidetection_hooks() {
-    blackbox::AntiDetection::init();
 }

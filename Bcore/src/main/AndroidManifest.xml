@@ -525,7 +525,7 @@
         <activity android:name=".proxy.ProxyPendingActivity$P46" android:exported="true" android:process=":p46" android:theme="@android:style/Theme.Translucent" />
         <activity android:name=".proxy.ProxyPendingActivity$P47" android:exported="true" android:process=":p47" android:theme="@android:style/Theme.Translucent" />
         <activity android:name=".proxy.ProxyPendingActivity$P48" android:exported="true" android:process=":p48" android:theme="@android:style/Theme.Translucent" />
-        <activity android:name=".proxy.ProxyPendingActivity$P49" android:exported="true" android:process=":p48" android:theme="@android:style/Theme.Translucent" />
+        <activity android:name=".proxy.ProxyPendingActivity$P49" android:exported="true" android:process=":p49" android:theme="@android:style/Theme.Translucent" />
 
         <service android:name=".proxy.ProxyService$P0" android:exported="true" android:process=":p0" />
         <service android:name=".proxy.ProxyService$P1" android:exported="true" android:process=":p1" />

@@ -11,11 +11,11 @@ plugins {
 
 android {
   namespace = "com.equinox.virtual"
-  compileSdk { version = release(36) { minorApiLevel = 1 } }
+  compileSdk = 36
 
   defaultConfig {
     applicationId = "com.equinox.virtual"
-    minSdk = 24
+    minSdk = 21
     targetSdk = 36
     versionCode = 1
     versionName = "1.0"

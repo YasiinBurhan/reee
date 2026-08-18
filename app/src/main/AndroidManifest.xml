@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-sdk tools:overrideLibrary="androidx.core.ktx, androidx.core, com.google.firebase.firestore, com.google.android.gms.base, com.google.android.gms.common, com.google.android.gms.tasks, com.google.firebase, com.google.firebase.appcheck.interop, com.google.firebase.database.collection, com.google.firebase.auth.interop, com.google.firebase.common, com.google.firebase.components, com.google.firebase.installations, com.google.firebase.installations.interop" />
+
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />

@@ -4,7 +4,7 @@ plugins {
 
 android {
     namespace = "top.niunaijun.blackbox"
-    compileSdk = 35
+    compileSdk = 36
 
     aidlPackagedList.add("android/app/IServiceConnection.aidl")
     aidlPackagedList.add("android/accounts/IAccountManagerResponse.aidl")
@@ -15,7 +15,7 @@ android {
     }
 
     defaultConfig {
-        minSdk = 24
+        minSdk = 21
 
         consumerProguardFiles("consumer-rules.pro")
         ndk {
